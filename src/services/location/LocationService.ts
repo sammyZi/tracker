@@ -8,10 +8,19 @@
  * - GPS signal quality monitoring
  * - Speed and heading data capture
  * - Stationary point detection
+ * - Background location tracking support
  */
 
 import * as ExpoLocation from 'expo-location';
 import { Location, AccuracyStatus, AccuracyQuality } from '@/types';
+import {
+  startBackgroundLocationTracking,
+  stopBackgroundLocationTracking,
+  isBackgroundLocationTrackingActive,
+  setBackgroundLocationCallback,
+  clearBackgroundLocationCallback,
+  resetBackgroundState,
+} from './BackgroundLocationTask';
 
 export type LocationUpdateCallback = (location: Location) => void;
 
@@ -28,6 +37,7 @@ class LocationService {
   private updateCallbacks: LocationUpdateCallback[] = [];
   private lastLocation: Location | null = null;
   private kalmanState: KalmanState | null = null;
+  private useBackgroundTracking: boolean = false;
   
   // Configuration constants
   private readonly ACCURACY_THRESHOLD = 20; // meters
@@ -37,30 +47,62 @@ class LocationService {
   private readonly MIN_DISTANCE_BETWEEN_POINTS = 5; // meters
 
   /**
-   * Request location permissions from the user
+   * Request foreground location permissions from the user
    */
   async requestPermissions(): Promise<boolean> {
     try {
-      // Request foreground permission first
-      const { status: foregroundStatus } = await ExpoLocation.requestForegroundPermissionsAsync();
+      const { status } = await ExpoLocation.requestForegroundPermissionsAsync();
       
-      if (foregroundStatus !== 'granted') {
+      if (status !== 'granted') {
         console.warn('Foreground location permission denied');
         return false;
-      }
-
-      // Request background permission for continuous tracking
-      const { status: backgroundStatus } = await ExpoLocation.requestBackgroundPermissionsAsync();
-      
-      if (backgroundStatus !== 'granted') {
-        console.warn('Background location permission denied');
-        // Still return true as foreground is sufficient for basic tracking
-        return true;
       }
 
       return true;
     } catch (error) {
       console.error('Error requesting location permissions:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Request background location permissions from the user
+   * Must be called after foreground permissions are granted
+   */
+  async requestBackgroundPermissions(): Promise<boolean> {
+    try {
+      // Check if foreground permission is granted first
+      const { status: foregroundStatus } = await ExpoLocation.getForegroundPermissionsAsync();
+      
+      if (foregroundStatus !== 'granted') {
+        console.warn('Foreground permission must be granted before requesting background permission');
+        return false;
+      }
+
+      // Request background permission
+      const { status: backgroundStatus } = await ExpoLocation.requestBackgroundPermissionsAsync();
+      
+      if (backgroundStatus !== 'granted') {
+        console.warn('Background location permission denied');
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error requesting background location permissions:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if background location permissions are granted
+   */
+  async hasBackgroundPermissions(): Promise<boolean> {
+    try {
+      const { status } = await ExpoLocation.getBackgroundPermissionsAsync();
+      return status === 'granted';
+    } catch (error) {
+      console.error('Error checking background location permissions:', error);
       return false;
     }
   }
@@ -80,39 +122,77 @@ class LocationService {
 
   /**
    * Start high-accuracy GPS tracking
+   * @param enableBackground - Enable background location tracking (default: true)
    */
-  async startTracking(): Promise<void> {
+  async startTracking(enableBackground: boolean = true): Promise<void> {
     if (this.isTracking) {
       console.warn('Location tracking already started');
       return;
     }
 
-    const hasPermission = await this.hasPermissions();
-    if (!hasPermission) {
-      throw new Error('Location permissions not granted');
+    // Check foreground permissions
+    const hasForegroundPermission = await this.hasPermissions();
+    if (!hasForegroundPermission) {
+      throw new Error('Foreground location permissions not granted');
+    }
+
+    // Check background permissions if background tracking is requested
+    if (enableBackground) {
+      const hasBackgroundPermission = await this.hasBackgroundPermissions();
+      if (!hasBackgroundPermission) {
+        throw new Error('Background location permissions not granted. Please enable "Always" location access in settings.');
+      }
     }
 
     try {
-      // Start location updates with highest accuracy
-      this.locationSubscription = await ExpoLocation.watchPositionAsync(
-        {
-          accuracy: ExpoLocation.Accuracy.BestForNavigation,
-          timeInterval: 3000, // 3 seconds
-          distanceInterval: 5, // 5 meters
-        },
-        (expoLocation) => {
-          this.handleLocationUpdate(expoLocation);
-        }
-      );
+      this.useBackgroundTracking = enableBackground;
+
+      if (enableBackground) {
+        // Use background location tracking for continuous tracking
+        await this.startBackgroundTracking();
+      } else {
+        // Use foreground-only tracking
+        await this.startForegroundTracking();
+      }
 
       this.isTracking = true;
       this.isPaused = false;
       this.kalmanState = null; // Reset Kalman filter
-      console.log('Location tracking started with high accuracy');
+      console.log(`Location tracking started with high accuracy (background: ${enableBackground})`);
     } catch (error) {
       console.error('Error starting location tracking:', error);
       throw error;
     }
+  }
+
+  /**
+   * Start foreground-only location tracking
+   */
+  private async startForegroundTracking(): Promise<void> {
+    this.locationSubscription = await ExpoLocation.watchPositionAsync(
+      {
+        accuracy: ExpoLocation.Accuracy.BestForNavigation,
+        timeInterval: 3000, // 3 seconds
+        distanceInterval: 5, // 5 meters
+      },
+      (expoLocation) => {
+        this.handleLocationUpdate(expoLocation);
+      }
+    );
+  }
+
+  /**
+   * Start background location tracking
+   */
+  private async startBackgroundTracking(): Promise<void> {
+    // Set up callback for background location updates
+    setBackgroundLocationCallback((location: Location) => {
+      // Process location through the same pipeline
+      this.handleBackgroundLocationUpdate(location);
+    });
+
+    // Start the background task
+    await startBackgroundLocationTracking();
   }
 
   /**
@@ -123,16 +203,29 @@ class LocationService {
       return;
     }
 
-    if (this.locationSubscription) {
-      this.locationSubscription.remove();
-      this.locationSubscription = null;
-    }
+    try {
+      if (this.useBackgroundTracking) {
+        // Stop background tracking
+        await stopBackgroundLocationTracking();
+        clearBackgroundLocationCallback();
+        resetBackgroundState();
+      }
 
-    this.isTracking = false;
-    this.isPaused = false;
-    this.lastLocation = null;
-    this.kalmanState = null;
-    console.log('Location tracking stopped');
+      if (this.locationSubscription) {
+        this.locationSubscription.remove();
+        this.locationSubscription = null;
+      }
+
+      this.isTracking = false;
+      this.isPaused = false;
+      this.useBackgroundTracking = false;
+      this.lastLocation = null;
+      this.kalmanState = null;
+      console.log('Location tracking stopped');
+    } catch (error) {
+      console.error('Error stopping location tracking:', error);
+      throw error;
+    }
   }
 
   /**
@@ -242,7 +335,21 @@ class LocationService {
   }
 
   /**
-   * Handle incoming location updates
+   * Check if background tracking is active
+   */
+  async isBackgroundTrackingActive(): Promise<boolean> {
+    return await isBackgroundLocationTrackingActive();
+  }
+
+  /**
+   * Check if using background tracking mode
+   */
+  isUsingBackgroundTracking(): boolean {
+    return this.useBackgroundTracking;
+  }
+
+  /**
+   * Handle incoming location updates from foreground tracking
    */
   private handleLocationUpdate(expoLocation: ExpoLocation.LocationObject): void {
     if (this.isPaused) {
@@ -274,9 +381,31 @@ class LocationService {
     this.lastLocation = smoothedLocation;
 
     // Notify all subscribers
+    this.notifySubscribers(smoothedLocation);
+  }
+
+  /**
+   * Handle incoming location updates from background tracking
+   * Background task already applies filtering and Kalman smoothing
+   */
+  private handleBackgroundLocationUpdate(location: Location): void {
+    if (this.isPaused) {
+      return;
+    }
+
+    this.lastLocation = location;
+
+    // Notify all subscribers
+    this.notifySubscribers(location);
+  }
+
+  /**
+   * Notify all subscribers of location update
+   */
+  private notifySubscribers(location: Location): void {
     this.updateCallbacks.forEach(callback => {
       try {
-        callback(smoothedLocation);
+        callback(location);
       } catch (error) {
         console.error('Error in location update callback:', error);
       }
