@@ -5,3 +5,6 @@
 
 // Common components
 export { Text, Button, Card, Input } from './common';
+
+// Map components
+export { LiveRouteMap, AnimatedLocationMarker } from './map';

@@ -39,12 +39,12 @@ class LocationService {
   private kalmanState: KalmanState | null = null;
   private useBackgroundTracking: boolean = false;
   
-  // Configuration constants
-  private readonly ACCURACY_THRESHOLD = 20; // meters
+  // Configuration constants - Balanced accuracy mode
+  private readonly ACCURACY_THRESHOLD = 20; // meters - accept good GPS points
   private readonly STATIONARY_SPEED_THRESHOLD = 0.5; // m/s
-  private readonly KALMAN_Q = 3; // Process noise
-  private readonly KALMAN_R = 10; // Measurement noise
-  private readonly MIN_DISTANCE_BETWEEN_POINTS = 5; // meters
+  private readonly KALMAN_Q = 3; // Process noise - balanced for GPS smoothing
+  private readonly KALMAN_R = 10; // Measurement noise - balanced for typical GPS
+  private readonly MIN_DISTANCE_BETWEEN_POINTS = 5; // meters - capture route details
 
   /**
    * Request foreground location permissions from the user
@@ -166,7 +166,7 @@ class LocationService {
   }
 
   /**
-   * Start foreground-only location tracking
+   * Start foreground-only location tracking with high accuracy
    */
   private async startForegroundTracking(): Promise<void> {
     this.locationSubscription = await ExpoLocation.watchPositionAsync(
@@ -364,8 +364,11 @@ class LocationService {
       return;
     }
 
-    // Detect stationary points
-    if (this.isStationary(location)) {
+    // Always allow the first location through (for initial map centering)
+    const isFirstLocation = this.lastLocation === null;
+
+    // Detect stationary points (but not for first location)
+    if (!isFirstLocation && this.isStationary(location)) {
       console.log('Stationary point detected, skipping');
       return;
     }
@@ -373,8 +376,8 @@ class LocationService {
     // Apply Kalman filter for smoothing
     const smoothedLocation = this.applyKalmanFilter(location);
 
-    // Check minimum distance from last point
-    if (this.lastLocation && !this.hasMovedEnough(smoothedLocation, this.lastLocation)) {
+    // Check minimum distance from last point (but not for first location)
+    if (!isFirstLocation && this.lastLocation && !this.hasMovedEnough(smoothedLocation, this.lastLocation)) {
       return;
     }
 
