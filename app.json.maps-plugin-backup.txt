@@ -1,0 +1,17 @@
+// When ready to use full react-native-maps, add this to the "plugins" array in app.json:
+
+[
+  "react-native-maps",
+  {
+    "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+  }
+]
+
+// And add this to "ios" section:
+"config": {
+  "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+}
+
+// Then run:
+// npx expo prebuild
+// npx expo run:ios (or run:android)

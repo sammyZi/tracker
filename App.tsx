@@ -6,10 +6,12 @@ import { Text, Button, Card } from './src/components';
 import { Colors } from './src/constants/theme';
 import { locationService } from './src/services/location';
 import { useState } from 'react';
+import { ActivityTrackingScreen } from './src/screens';
 
 export default function App() {
   const { fontsLoaded, error } = useFonts();
   const [permissionStatus, setPermissionStatus] = useState<string>('Not requested');
+  const [showTrackingScreen, setShowTrackingScreen] = useState(false);
 
   if (!fontsLoaded) {
     return (
@@ -27,6 +29,11 @@ export default function App() {
         </Text>
       </SafeAreaView>
     );
+  }
+
+  // Show ActivityTrackingScreen if enabled
+  if (showTrackingScreen) {
+    return <ActivityTrackingScreen onBack={() => setShowTrackingScreen(false)} />;
   }
 
   const handleRequestPermissions = async () => {
@@ -96,6 +103,13 @@ export default function App() {
               fullWidth 
               style={styles.button}
               onPress={handleRequestPermissions}
+            />
+            <Button 
+              title="View Activity Tracking Screen" 
+              variant="secondary" 
+              fullWidth 
+              style={styles.button}
+              onPress={() => setShowTrackingScreen(true)}
             />
           </View>
         </Card>

@@ -20,11 +20,11 @@ import { Location } from '@/types';
 export const BACKGROUND_LOCATION_TASK = 'background-location-task';
 
 // Configuration constants
-const ACCURACY_THRESHOLD = 20; // meters
+const ACCURACY_THRESHOLD = 20; // meters - accept good GPS points (realistic threshold)
 const STATIONARY_SPEED_THRESHOLD = 0.5; // m/s
-const MIN_DISTANCE_BETWEEN_POINTS = 5; // meters
-const KALMAN_Q = 3; // Process noise
-const KALMAN_R = 10; // Measurement noise
+const MIN_DISTANCE_BETWEEN_POINTS = 5; // meters - capture route details
+const KALMAN_Q = 3; // Process noise - balanced for GPS smoothing
+const KALMAN_R = 10; // Measurement noise - balanced for typical GPS
 
 // Kalman filter state (persisted across task executions)
 interface KalmanState {
@@ -135,7 +135,7 @@ export async function startBackgroundLocationTracking(): Promise<void> {
       // Enable for continuous tracking
       showsBackgroundLocationIndicator: true,
       
-      // Foreground service for Android
+      // Foreground service for Android with location type
       foregroundService: {
         notificationTitle: 'Activity Tracking',
         notificationBody: 'Tracking your activity with high accuracy...',
