@@ -280,6 +280,9 @@ class ActivityService {
       // Clear all callbacks
       this.metricsUpdateCallbacks = [];
 
+      // Dismiss notification
+      await notificationService.dismissActivityNotification();
+
       console.log('Activity stopped and saved:', activity.id);
 
       return activity;

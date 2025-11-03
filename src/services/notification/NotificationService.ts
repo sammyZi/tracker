@@ -136,9 +136,10 @@ class NotificationService {
             isPaused,
           },
           sticky: true, // Cannot be swiped away
-          priority: Notifications.AndroidNotificationPriority.DEFAULT,
+          priority: Notifications.AndroidNotificationPriority.LOW, // Low priority to avoid sound
           sound: false,
           badge: 0,
+          color: '#6C63FF', // App primary color
         },
         trigger: null, // Show immediately
       });
