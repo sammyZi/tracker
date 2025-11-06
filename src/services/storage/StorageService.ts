@@ -15,6 +15,7 @@ import {
   PersonalRecords,
   ActivityRecord,
 } from '../../types';
+import personalRecordsService from '../personalRecords/PersonalRecordsService';
 
 // Storage keys
 const STORAGE_KEYS = {
@@ -325,61 +326,52 @@ class StorageService {
 
   /**
    * Calculate personal records from activities
+   * Uses PersonalRecordsService for consistent record calculation
    */
   private async calculatePersonalRecords(activities: Activity[]): Promise<PersonalRecords> {
-    const defaultRecord: ActivityRecord = {
-      value: 0,
-      activityId: '',
-      date: 0,
-    };
+    return personalRecordsService.calculatePersonalRecords(activities);
+  }
 
-    if (activities.length === 0) {
-      return {
-        longestDistance: defaultRecord,
-        fastestPace: defaultRecord,
-        longestDuration: defaultRecord,
-        mostSteps: defaultRecord,
-      };
+  /**
+   * Get personal records for all time
+   */
+  async getPersonalRecords(): Promise<PersonalRecords> {
+    const activities = await this.getActivities();
+    return personalRecordsService.getAllTimeRecords(activities);
+  }
+
+  /**
+   * Check if a new activity breaks any personal records
+   * @param activityId - ID of the newly saved activity
+   * @returns Information about broken records
+   */
+  async checkForNewRecords(activityId: string): Promise<{
+    hasNewRecords: boolean;
+    brokenRecords: Array<{
+      type: 'distance' | 'pace' | 'duration' | 'steps';
+      oldValue: number;
+      newValue: number;
+    }>;
+  }> {
+    try {
+      const newActivity = await this.getActivity(activityId);
+      if (!newActivity) {
+        return { hasNewRecords: false, brokenRecords: [] };
+      }
+
+      // Get all activities except the new one
+      const allActivities = await this.getActivities();
+      const previousActivities = allActivities.filter(a => a.id !== activityId);
+
+      // Calculate previous records
+      const previousRecords = personalRecordsService.calculatePersonalRecords(previousActivities);
+
+      // Check if new activity breaks any records
+      return personalRecordsService.checkForNewRecords(newActivity, previousRecords);
+    } catch (error) {
+      console.error('Error checking for new records:', error);
+      return { hasNewRecords: false, brokenRecords: [] };
     }
-
-    const longestDistance = activities.reduce((max, a) =>
-      a.distance > max.distance ? a : max
-    );
-
-    const fastestPace = activities.reduce((min, a) =>
-      a.averagePace < min.averagePace && a.averagePace > 0 ? a : min
-    );
-
-    const longestDuration = activities.reduce((max, a) =>
-      a.duration > max.duration ? a : max
-    );
-
-    const mostSteps = activities.reduce((max, a) =>
-      a.steps > max.steps ? a : max
-    );
-
-    return {
-      longestDistance: {
-        value: longestDistance.distance,
-        activityId: longestDistance.id,
-        date: longestDistance.startTime,
-      },
-      fastestPace: {
-        value: fastestPace.averagePace,
-        activityId: fastestPace.id,
-        date: fastestPace.startTime,
-      },
-      longestDuration: {
-        value: longestDuration.duration,
-        activityId: longestDuration.id,
-        date: longestDuration.startTime,
-      },
-      mostSteps: {
-        value: mostSteps.steps,
-        activityId: mostSteps.id,
-        date: mostSteps.startTime,
-      },
-    };
   }
 
   // ==================== Data Export/Import ====================

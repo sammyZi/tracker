@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import MapView, { Polyline, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Polyline, Marker, PROVIDER_GOOGLE, MapType as RNMapType } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { Location } from '../../types';
 import { Colors } from '../../constants/theme';
+import { useSettings } from '../../context';
 
 interface LiveRouteMapProps {
   currentLocation: Location | null;
@@ -16,8 +17,22 @@ export const LiveRouteMap: React.FC<LiveRouteMapProps> = ({
   routePoints,
   isTracking,
 }) => {
+  const { settings } = useSettings();
   const mapRef = React.useRef<MapView>(null);
   const [hasInitialized, setHasInitialized] = React.useState(false);
+
+  // Convert our MapType to React Native Maps MapType
+  const getMapType = (): RNMapType => {
+    switch (settings.mapType) {
+      case 'satellite':
+        return 'satellite';
+      case 'hybrid':
+        return 'hybrid';
+      case 'standard':
+      default:
+        return 'standard';
+    }
+  };
 
   // Center on first location
   React.useEffect(() => {
@@ -72,6 +87,7 @@ export const LiveRouteMap: React.FC<LiveRouteMapProps> = ({
       <MapView
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
+        mapType={getMapType()}
         style={styles.map}
         initialRegion={{
           latitude: currentLocation?.latitude || 18.4681966,
@@ -89,6 +105,12 @@ export const LiveRouteMap: React.FC<LiveRouteMapProps> = ({
         rotateEnabled={false}
         scrollEnabled={true}
         zoomEnabled={true}
+        zoomControlEnabled={false}
+        zoomTapEnabled={true}
+        minZoomLevel={10}
+        maxZoomLevel={20}
+        loadingEnabled={false}
+        moveOnMarkerPress={false}
         onPanDrag={() => setAutoFollow(false)} // Disable auto-follow when user pans
       >
         {/* Route polyline */}

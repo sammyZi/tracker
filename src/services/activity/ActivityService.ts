@@ -28,6 +28,7 @@ import locationService from '../location/LocationService';
 import storageService from '../storage/StorageService';
 import stepCounterService from '../stepCounter/StepCounterService';
 import notificationService from '../notification/NotificationService';
+import goalsService from '../goals/GoalsService';
 
 interface ActiveActivity {
   id: string;
@@ -48,6 +49,7 @@ class ActivityService {
   private metricsUpdateInterval: ReturnType<typeof setInterval> | null = null;
   private lastMetricsUpdate: number = 0;
   private readonly METRICS_UPDATE_INTERVAL = 1000; // Update metrics every second
+  private cachedCalories: number = 0; // Cached calorie value for current activity
 
   /**
    * Start a new activity
@@ -57,7 +59,7 @@ class ActivityService {
    */
   async startActivity(type: ActivityType, enableBackground: boolean = true): Promise<string> {
     console.log('=== START ACTIVITY CALLED ===', { type, enableBackground });
-    
+
     if (this.currentActivity) {
       console.error('Activity already in progress!');
       throw new Error('An activity is already in progress');
@@ -79,6 +81,7 @@ class ActivityService {
         steps: 0,
         status: 'active',
       };
+      this.cachedCalories = 0; // Reset cached calories for new activity
       console.log('Activity object created, status:', this.currentActivity.status);
 
       // Start location tracking
@@ -98,12 +101,12 @@ class ActivityService {
         const stepCounterAvailable = await stepCounterService.isAvailable();
         if (stepCounterAvailable) {
           await stepCounterService.startCounting();
-          
+
           // Subscribe to step updates
           this.stepCounterUnsubscribe = stepCounterService.onStepUpdate((steps) => {
             this.updateSteps(steps);
           });
-          
+
           console.log('Step counting started');
         } else {
           console.log('Step counter not available on this device');
@@ -114,7 +117,7 @@ class ActivityService {
       }
 
       console.log(`Activity started: ${activityId} (${type})`);
-      
+
       // Show initial notification
       const initialMetrics = this.calculateMetrics();
       await notificationService.showActivityNotification(
@@ -123,7 +126,7 @@ class ActivityService {
         'metric',
         false
       );
-      
+
       // Start metrics update loop
       this.startMetricsUpdateLoop();
 
@@ -140,7 +143,7 @@ class ActivityService {
    */
   async pauseActivity(): Promise<void> {
     console.log('pauseActivity called, currentActivity:', !!this.currentActivity);
-    
+
     if (!this.currentActivity) {
       console.error('Cannot pause - no activity in progress!');
       throw new Error('No activity in progress');
@@ -164,7 +167,7 @@ class ActivityService {
     }
 
     console.log('Activity paused successfully');
-    
+
     // Notify subscribers with current metrics
     this.notifyMetricsUpdate();
   }
@@ -200,7 +203,7 @@ class ActivityService {
     }
 
     console.log('Activity resumed');
-    
+
     // Notify subscribers with current metrics
     this.notifyMetricsUpdate();
   }
@@ -227,6 +230,9 @@ class ActivityService {
       const metrics = this.calculateMetrics();
       const totalDuration = Math.floor((endTime - this.currentActivity.startTime - this.currentActivity.pausedTime) / 1000);
 
+      // Calculate final calories with accurate duration
+      const finalCalories = await this.calculateCalories(metrics.distance, totalDuration);
+
       // Create completed activity
       const completedActivity: Activity = {
         id: this.currentActivity.id,
@@ -239,7 +245,7 @@ class ActivityService {
         route: this.currentActivity.route,
         averagePace: metrics.averagePace,
         maxPace: this.calculateMaxPace(),
-        calories: metrics.calories,
+        calories: finalCalories,
         elevationGain: this.calculateElevationGain(),
         status: 'completed',
         createdAt: Date.now(),
@@ -247,6 +253,18 @@ class ActivityService {
 
       // Save activity to storage
       await storageService.saveActivity(completedActivity);
+
+      // Check for goal achievements
+      try {
+        const achievedGoals = await goalsService.checkGoalAchievements(completedActivity.id);
+        if (achievedGoals.length > 0) {
+          console.log('Goals achieved:', achievedGoals.length);
+          // Goals will be displayed in the UI through the goals hook
+        }
+      } catch (error) {
+        console.error('Error checking goal achievements:', error);
+        // Don't fail the activity save if goal check fails
+      }
 
       // Stop location tracking
       await locationService.stopTracking();
@@ -261,7 +279,7 @@ class ActivityService {
       if (stepCounterService.isCurrentlyCounting()) {
         await stepCounterService.stopCounting();
       }
-      
+
       if (this.stepCounterUnsubscribe) {
         this.stepCounterUnsubscribe();
         this.stepCounterUnsubscribe = null;
@@ -288,6 +306,58 @@ class ActivityService {
       return activity;
     } catch (error) {
       console.error('Error stopping activity:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Discard the current activity without saving
+   */
+  async discardActivity(): Promise<void> {
+    if (!this.currentActivity) {
+      throw new Error('No activity in progress');
+    }
+
+    try {
+      console.log('Discarding activity:', this.currentActivity.id);
+
+      // Stop location tracking
+      await locationService.stopTracking();
+
+      // Unsubscribe from location updates
+      if (this.locationUnsubscribe) {
+        this.locationUnsubscribe();
+        this.locationUnsubscribe = null;
+      }
+
+      // Stop step counting and unsubscribe
+      if (stepCounterService.isCurrentlyCounting()) {
+        await stepCounterService.stopCounting();
+      }
+
+      if (this.stepCounterUnsubscribe) {
+        this.stepCounterUnsubscribe();
+        this.stepCounterUnsubscribe = null;
+      }
+
+      // Clear current activity FIRST to stop interval callbacks
+      this.currentActivity = null;
+
+      // Clear metrics update interval
+      if (this.metricsUpdateInterval) {
+        clearInterval(this.metricsUpdateInterval);
+        this.metricsUpdateInterval = null;
+      }
+
+      // Clear all callbacks
+      this.metricsUpdateCallbacks = [];
+
+      // Dismiss notification
+      await notificationService.dismissActivityNotification();
+
+      console.log('Activity discarded successfully');
+    } catch (error) {
+      console.error('Error discarding activity:', error);
       throw error;
     }
   }
@@ -334,7 +404,7 @@ class ActivityService {
    */
   onMetricsUpdate(callback: (metrics: ActivityMetrics) => void): () => void {
     this.metricsUpdateCallbacks.push(callback);
-    
+
     // Return unsubscribe function
     return () => {
       this.metricsUpdateCallbacks = this.metricsUpdateCallbacks.filter(cb => cb !== callback);
@@ -391,7 +461,7 @@ class ActivityService {
       clearInterval(this.metricsUpdateInterval);
       this.metricsUpdateInterval = null;
     }
-    
+
     this.metricsUpdateInterval = setInterval(() => {
       if (!this.currentActivity) {
         if (this.metricsUpdateInterval) {
@@ -406,7 +476,7 @@ class ActivityService {
         this.notifyMetricsUpdate();
       }
     }, this.METRICS_UPDATE_INTERVAL);
-    
+
     console.log('Metrics update loop started');
   }
 
@@ -415,9 +485,9 @@ class ActivityService {
    */
   private notifyMetricsUpdate(): void {
     if (!this.currentActivity) return;
-    
+
     const metrics = this.calculateMetrics();
-    
+
     // Update notification with current metrics
     notificationService.updateActivityNotification(
       metrics,
@@ -425,7 +495,7 @@ class ActivityService {
       'metric',
       this.currentActivity.status === 'paused'
     ).catch(err => console.error('Error updating notification:', err));
-    
+
     this.metricsUpdateCallbacks.forEach(callback => {
       try {
         callback(metrics);
@@ -437,6 +507,7 @@ class ActivityService {
 
   /**
    * Calculate current activity metrics
+   * Note: Calories are calculated asynchronously and cached
    */
   private calculateMetrics(): ActivityMetrics {
     if (!this.currentActivity) {
@@ -454,7 +525,13 @@ class ActivityService {
     const duration = this.calculateActiveDuration();
     const averagePace = this.calculateAveragePace(distance, duration);
     const currentPace = this.calculateCurrentPace();
-    const calories = this.calculateCalories(distance, duration);
+
+    // Calculate calories asynchronously and update cached value
+    this.calculateCalories(distance, duration).then(calories => {
+      if (this.currentActivity) {
+        this.cachedCalories = calories;
+      }
+    }).catch(err => console.error('Error calculating calories:', err));
 
     return {
       currentPace,
@@ -462,7 +539,7 @@ class ActivityService {
       distance,
       duration,
       steps: this.currentActivity.steps,
-      calories,
+      calories: this.cachedCalories,
     };
   }
 
@@ -591,7 +668,7 @@ class ActivityService {
 
     for (let i = windowSize; i < route.length; i++) {
       const windowPoints = route.slice(i - windowSize, i);
-      
+
       let distance = 0;
       for (let j = 1; j < windowPoints.length; j++) {
         const prev = windowPoints[j - 1];
@@ -609,7 +686,7 @@ class ActivityService {
       if (distance > 0 && timeSpan > 0) {
         const distanceKm = distance / 1000;
         const pace = timeSpan / distanceKm;
-        
+
         // Track fastest pace (lowest value)
         if (maxPace === 0 || pace < maxPace) {
           maxPace = pace;
@@ -622,18 +699,27 @@ class ActivityService {
 
   /**
    * Calculate calories burned
-   * Uses MET (Metabolic Equivalent of Task) values
+   * Uses MET (Metabolic Equivalent of Task) values based on activity type and speed
+   * Fetches user weight from profile for accurate calculations
    * @param distance - Distance in meters
    * @param duration - Duration in seconds
    * @returns Estimated calories burned
    */
-  private calculateCalories(distance: number, duration: number): number {
+  private async calculateCalories(distance: number, duration: number): Promise<number> {
     if (!this.currentActivity || distance === 0 || duration === 0) {
       return 0;
     }
 
-    // Default weight if not available (70kg)
-    const weight = 70; // TODO: Get from user profile
+    // Get user weight from profile
+    let weight = 70; // Default weight if not available (70kg)
+    try {
+      const profile = await storageService.getUserProfile();
+      if (profile?.weight) {
+        weight = profile.weight;
+      }
+    } catch (error) {
+      console.log('Could not fetch user weight, using default:', error);
+    }
 
     // Calculate speed in km/h
     const distanceKm = distance / 1000;
@@ -648,8 +734,10 @@ class ActivityService {
         met = 3.0; // Slow walking
       } else if (speed < 5.5) {
         met = 3.5; // Moderate walking
-      } else {
+      } else if (speed < 6.5) {
         met = 4.3; // Brisk walking
+      } else {
+        met = 5.0; // Very brisk walking
       }
     } else {
       // Running
@@ -657,8 +745,10 @@ class ActivityService {
         met = 8.0; // Jogging
       } else if (speed < 11) {
         met = 10.0; // Running
+      } else if (speed < 13) {
+        met = 11.5; // Fast running
       } else {
-        met = 12.0; // Fast running
+        met = 13.0; // Very fast running
       }
     }
 

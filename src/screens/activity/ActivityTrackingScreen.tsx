@@ -5,19 +5,20 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
-  Alert,
   Dimensions,
   Platform,
   BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { ConfirmModal } from '../../components/common';
 import { LiveRouteMap } from '../../components/map/LiveRouteMap';
 import ActivityService from '../../services/activity';
 import locationService from '../../services/location';
 import NotificationService from '../../services/notification';
 import AudioAnnouncementService from '../../services/audio';
 import HapticFeedbackService from '../../services/haptic';
+import { useConfirmModal } from '../../hooks/useConfirmModal';
 import { formatDuration, formatDistance, formatPace } from '../../utils';
 import { Colors } from '../../constants/theme';
 import { ActivityType } from '../../types';
@@ -29,6 +30,7 @@ interface ActivityTrackingScreenProps {
 }
 
 export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ onBack }) => {
+  const { modalState, showConfirm, hideModal } = useConfirmModal();
   const [activityType, setActivityType] = useState<ActivityType>('walking');
   const [isTracking, setIsTracking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -45,16 +47,16 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
 
   useEffect(() => {
     initializeServices();
-    
+
     // Handle Android back button
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
       if (ActivityService.isActivityInProgress()) {
         // If tracking, show confirmation
-        Alert.alert(
+        showConfirm(
           'Activity in Progress',
           'You have an active activity. What would you like to do?',
           [
-            { text: 'Continue', style: 'cancel' },
+            { text: 'Continue', onPress: hideModal, style: 'cancel' },
             {
               text: 'Stop & Save',
               onPress: async () => {
@@ -68,31 +70,37 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
                   );
                   await HapticFeedbackService.success();
                   await resetState();
+                  hideModal();
                   if (onBack) onBack();
                 } catch (error) {
                   console.error('Error stopping activity:', error);
+                  hideModal();
                   if (onBack) onBack();
                 }
               },
+              style: 'default',
             },
             {
               text: 'Discard',
-              style: 'destructive',
               onPress: async () => {
                 try {
                   if (ActivityService.isActivityInProgress()) {
-                    await locationService.stopTracking();
+                    await ActivityService.discardActivity();
                   }
                   AudioAnnouncementService.stop();
                   await resetState();
+                  hideModal();
                   if (onBack) onBack();
                 } catch (error) {
                   console.error('Error discarding activity:', error);
+                  hideModal();
                   if (onBack) onBack();
                 }
               },
+              style: 'destructive',
             },
-          ]
+          ],
+          { icon: 'alert-circle', iconColor: Colors.warning }
         );
         return true; // Prevent default back behavior
       } else {
@@ -104,7 +112,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
         return false;
       }
     });
-    
+
     return () => {
       backHandler.remove();
       if (ActivityService.isActivityInProgress()) {
@@ -116,22 +124,22 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
 
   const initializeServices = async () => {
     await NotificationService.initialize();
-    
+
     // Initialize audio announcements with default settings
     AudioAnnouncementService.initialize({
       enabled: true,
       interval: 1000, // 1km
       units: 'metric',
     });
-    
+
     // Initialize haptic feedback
     HapticFeedbackService.initialize(true);
-    
+
     // Subscribe to location updates
     locationService.onLocationUpdate((location) => {
       setCurrentLocation(location);
     });
-    
+
     // Start foreground-only location tracking for map display (not for activity recording)
     try {
       const hasPermission = await locationService.hasPermissions();
@@ -156,30 +164,30 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
     }
 
     console.log('Timer effect triggered - isTracking:', isTracking, 'isPaused:', isPaused);
-    
+
     // Clear existing interval
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
     }
-    
+
     // If paused, don't start interval (timer stays frozen)
     if (isPaused) {
       console.log('Activity is PAUSED - timer frozen at:', duration);
       return;
     }
-    
+
     console.log('Starting timer interval - start time:', activityStartTime, 'paused time:', pausedTime);
-    
+
     // Update immediately
     const updateDuration = () => {
       const now = Date.now();
       const elapsed = Math.floor((now - activityStartTime - pausedTime) / 1000);
       setDuration(elapsed);
     };
-    
+
     updateDuration();
-    
+
     timerIntervalRef.current = setInterval(updateDuration, 1000);
 
     return () => {
@@ -206,7 +214,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
       setDistance(metrics.distance);
       setCurrentPace(metrics.currentPace);
       setSteps(metrics.steps);
-      
+
       // Check for distance milestones and announce
       if (AudioAnnouncementService.shouldAnnounce(metrics.distance)) {
         AudioAnnouncementService.announceDistance(metrics.distance, metrics.currentPace || metrics.averagePace);
@@ -245,45 +253,60 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
         }
         await new Promise(resolve => setTimeout(resolve, 500));
       }
-      
+
       // Stop foreground-only tracking before starting activity with background tracking
       if (locationService.isCurrentlyTracking()) {
         console.log('Stopping foreground tracking before starting activity');
         await locationService.stopTracking();
         await new Promise(resolve => setTimeout(resolve, 500));
       }
-      
+
       // Set start time for local timer
       const startTime = Date.now();
       setActivityStartTime(startTime);
-      
+
       await ActivityService.startActivity(activityType, true);
       setIsTracking(true);
       setIsPaused(false);
-      
+
       // Reset audio announcement service for new activity
       AudioAnnouncementService.reset();
     } catch (error) {
       console.error('Error starting activity:', error);
-      Alert.alert('Error', 'Failed to start tracking');
+      showConfirm(
+        'Error',
+        'Failed to start tracking',
+        [{ text: 'OK', onPress: hideModal, style: 'default' }],
+        { icon: 'alert-circle', iconColor: Colors.error }
+      );
     }
   };
 
   const handlePause = async () => {
     if (!ActivityService.isActivityInProgress()) {
-      Alert.alert('Error', 'No activity in progress');
+      showConfirm(
+        'Error',
+        'No activity in progress',
+        [{ text: 'OK', onPress: hideModal, style: 'default' }],
+        { icon: 'alert-circle', iconColor: Colors.error }
+      );
       return;
     }
-    
+
     try {
       const pauseTime = Date.now();
       setLastPauseTime(pauseTime);
-      
+
       await ActivityService.pauseActivity();
       setIsPaused(true);
     } catch (error) {
       console.error('Error pausing activity:', error);
-      Alert.alert('Error', 'Failed to pause activity');
+      showConfirm(
+        'Error',
+        'Failed to pause activity',
+        [{ text: 'OK', onPress: hideModal, style: 'default' }],
+        { icon: 'alert-circle', iconColor: Colors.error }
+      );
     }
   };
 
@@ -292,35 +315,43 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
       const pauseDuration = Date.now() - lastPauseTime;
       setPausedTime(prev => prev + pauseDuration);
       setLastPauseTime(0);
-      
+
       await ActivityService.resumeActivity();
       setIsPaused(false);
     } catch (error) {
       console.error('Error resuming activity:', error);
-      Alert.alert('Error', 'Failed to resume activity');
+      showConfirm(
+        'Error',
+        'Failed to resume activity',
+        [{ text: 'OK', onPress: hideModal, style: 'default' }],
+        { icon: 'alert-circle', iconColor: Colors.error }
+      );
     }
   };
 
   const handleStop = async () => {
-    Alert.alert(
+    showConfirm(
       'Stop Activity',
       'Do you want to save this activity?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Cancel', onPress: hideModal, style: 'cancel' },
         {
           text: 'Discard',
-          style: 'destructive',
           onPress: async () => {
             try {
               if (ActivityService.isActivityInProgress()) {
-                await locationService.stopTracking();
+                await ActivityService.discardActivity();
               }
+              AudioAnnouncementService.stop();
               await resetState();
+              hideModal();
             } catch (error) {
               console.error('Error discarding activity:', error);
               await resetState();
+              hideModal();
             }
           },
+          style: 'destructive',
         },
         {
           text: 'Save',
@@ -328,14 +359,25 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
             try {
               await ActivityService.stopActivity();
               await resetState();
-              Alert.alert('Success', 'Activity saved!');
+              hideModal();
+              setTimeout(() => {
+                showConfirm(
+                  'Success',
+                  'Activity saved!',
+                  [{ text: 'OK', onPress: hideModal, style: 'default' }],
+                  { icon: 'checkmark-circle', iconColor: Colors.success }
+                );
+              }, 300);
             } catch (error) {
               console.error('Error saving activity:', error);
               await resetState();
+              hideModal();
             }
           },
+          style: 'default',
         },
-      ]
+      ],
+      { icon: 'stop-circle', iconColor: Colors.error }
     );
   };
 
@@ -350,16 +392,16 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
     setActivityStartTime(0);
     setPausedTime(0);
     setLastPauseTime(0);
-    
+
     // Clear local timer
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
     }
-    
+
     // Wait a bit for cleanup
     await new Promise(resolve => setTimeout(resolve, 500));
-    
+
     // Restart foreground-only tracking for map display
     try {
       const hasPermission = await locationService.hasPermissions();
@@ -377,7 +419,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      
+
       {/* Map */}
       <View style={styles.mapContainer}>
         <LiveRouteMap
@@ -391,8 +433,8 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
       <SafeAreaView style={styles.topBar} edges={['top']}>
         <View style={styles.topBarContent}>
           {!isTracking && onBack && (
-            <TouchableOpacity 
-              style={styles.backButton} 
+            <TouchableOpacity
+              style={styles.backButton}
               onPress={onBack}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
@@ -421,7 +463,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
             <Text style={styles.metricValue}>{formatDuration(duration)}</Text>
             <Text style={styles.metricLabel}>Time</Text>
           </View>
-          
+
           <View style={styles.metricCard}>
             <Ionicons name="navigate-outline" size={18} color={Colors.primary} />
             <Text style={styles.metricValue}>{formatDistance(distance)}</Text>
@@ -435,7 +477,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
             <Text style={styles.metricValue}>{formatPace(currentPace)}</Text>
             <Text style={styles.metricLabel}>Pace</Text>
           </View>
-          
+
           <View style={styles.metricCard}>
             <Ionicons name="footsteps-outline" size={18} color={Colors.primary} />
             <Text style={styles.metricValue}>{steps}</Text>
@@ -535,6 +577,18 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
           </View>
         )}
       </SafeAreaView>
+
+      <ConfirmModal
+        visible={modalState.visible}
+        title={modalState.title}
+        message={modalState.message}
+        icon={modalState.icon as any}
+        iconColor={modalState.iconColor}
+        buttons={modalState.buttons}
+        loading={modalState.loading}
+        loadingMessage={modalState.loadingMessage}
+        onRequestClose={hideModal}
+      />
     </View>
   );
 };
@@ -547,7 +601,7 @@ const styles = StyleSheet.create({
       Platform.OS === 'android'
         ? (StatusBar.currentHeight || 20)
         : 0,
-  
+
   },
   mapContainer: {
     flex: 1,

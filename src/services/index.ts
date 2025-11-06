@@ -12,6 +12,8 @@ export type { StepUpdateCallback } from './stepCounter';
 export { default as NotificationService } from './notification';
 export { default as AudioAnnouncementService } from './audio';
 export { default as HapticFeedbackService } from './haptic';
+export { default as PersonalRecordsService } from './personalRecords';
+export { default as SharingService } from './sharing/SharingService';
 
 // Services will be exported here as they are created
 // export { FirebaseService } from './firebase/FirebaseService';
