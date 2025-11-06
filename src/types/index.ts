@@ -76,6 +76,7 @@ export interface UserSettings {
   autoPauseSensitivity: AutoPauseSensitivity;
   mapType: MapType;
   theme: Theme;
+  hapticFeedback: boolean;
 }
 
 export interface Goal {

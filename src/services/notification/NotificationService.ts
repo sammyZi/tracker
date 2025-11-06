@@ -183,8 +183,14 @@ class NotificationService {
     try {
       // Dismiss by identifier
       await Notifications.dismissNotificationAsync(ACTIVITY_NOTIFICATION_IDENTIFIER);
+      
+      // Also dismiss all notifications to be safe
+      await Notifications.dismissAllNotificationsAsync();
+      
       this.currentNotificationId = null;
       this.lastNotificationUpdate = 0;
+      
+      console.log('Activity notification dismissed');
     } catch (error) {
       console.error('Error dismissing activity notification:', error);
     }

@@ -61,18 +61,29 @@ class StepCounterService {
     }
 
     try {
-      // Reset counters for new session
-      this.sessionStartSteps = 0;
+      // Get current step count as baseline
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      try {
+        const result = await Pedometer.getStepCountAsync(startOfDay, now);
+        this.sessionStartSteps = result?.steps || 0;
+        console.log('Session baseline steps:', this.sessionStartSteps);
+      } catch (error) {
+        console.log('Could not get baseline steps, starting from 0');
+        this.sessionStartSteps = 0;
+      }
+
+      // Reset current steps
       this.currentSteps = 0;
 
       // Subscribe to live step updates
-      // On Android, we can only count steps from when we start watching
       this.subscription = Pedometer.watchStepCount((result) => {
         this.handleStepUpdate(result.steps);
       });
 
       this.isCounting = true;
-      console.log('Step counting started (live counting only)');
+      console.log('Step counting started');
     } catch (error) {
       console.error('Error starting step counting:', error);
       // Don't throw - just continue without step counting
@@ -186,17 +197,19 @@ class StepCounterService {
   /**
    * Handle incoming step updates from the pedometer
    */
-  private handleStepUpdate(totalSteps: number): void {
+  private handleStepUpdate(newSteps: number): void {
     if (!this.isCounting) {
       return;
     }
 
-    // Calculate steps for this session (total steps since start of day minus baseline)
-    const sessionSteps = Math.max(0, totalSteps - this.sessionStartSteps);
-    this.currentSteps = sessionSteps;
+    // watchStepCount gives us incremental steps since we started watching
+    // Add them to our current count
+    this.currentSteps += newSteps;
+
+    console.log(`Step update: +${newSteps}, Total: ${this.currentSteps}`);
 
     // Notify all subscribers
-    this.notifySubscribers(sessionSteps);
+    this.notifySubscribers(this.currentSteps);
   }
 
   /**

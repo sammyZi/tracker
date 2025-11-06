@@ -3,7 +3,7 @@
  * Defines colors, typography, spacing, and other design tokens
  */
 
-export const Colors = {
+export const LightColors = {
   // Primary Colors
   primary: '#6C63FF',
   primaryDark: '#5548E8',
@@ -28,6 +28,34 @@ export const Colors = {
   walking: '#FFB800',
 };
 
+export const DarkColors = {
+  // Primary Colors
+  primary: '#8B84FF',
+  primaryDark: '#6C63FF',
+  primaryLight: '#A39FFF',
+
+  // Secondary Colors
+  success: '#00D9A3',
+  warning: '#FFB800',
+  error: '#FF6B6B',
+  info: '#4ECDC4',
+
+  // Neutral Colors
+  background: '#121212',
+  surface: '#1E1E1E',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#B0B0B0',
+  border: '#2C2C2C',
+  disabled: '#4A4A4A',
+
+  // Activity Type Colors
+  running: '#00D9A3',
+  walking: '#FFB800',
+};
+
+// Default to light colors for backward compatibility
+export const Colors = LightColors;
+
 export const Typography = {
   // Font Families
   fontFamily: {
@@ -41,12 +69,12 @@ export const Typography = {
   // Font Sizes
   fontSize: {
     extraLarge: 56,
-    large: 32,
-    mediumLarge: 24,
-    medium: 20,
-    regular: 16,
-    small: 14,
-    extraSmall: 12,
+    large: 24,
+    mediumLarge: 18,
+    medium: 16,
+    regular: 14,
+    small: 12,
+    extraSmall: 11,
   },
 };
 
@@ -98,4 +126,24 @@ export const Layout = {
   buttonHeight: 56,
   inputHeight: 48,
   minTouchTarget: 44,
+  headerHeight: 60,
+};
+
+export const HeaderStyles = {
+  container: {
+    height: 60,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    backgroundColor: Colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+  },
+  title: {
+    fontSize: Typography.fontSize.mediumLarge,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+  },
 };

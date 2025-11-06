@@ -1,7 +1,11 @@
 package com.yourcompany.fitnesstracker
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
@@ -17,6 +21,39 @@ class MainActivity : ReactActivity() {
     // This is required for expo-splash-screen.
     setTheme(R.style.AppTheme);
     super.onCreate(null)
+    
+    // Request battery optimization exemption for background tracking
+    requestBatteryOptimizationExemption()
+  }
+  
+  /**
+   * Request to disable battery optimization for this app
+   * This helps prevent Android from killing the app in the background
+   */
+  private fun requestBatteryOptimizationExemption() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      val packageName = packageName
+      val pm = getSystemService(POWER_SERVICE) as PowerManager
+      
+      // Check if already exempted
+      if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+        try {
+          val intent = Intent().apply {
+            action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+            data = Uri.parse("package:$packageName")
+          }
+          startActivity(intent)
+        } catch (e: Exception) {
+          // If the direct intent fails, open battery optimization settings
+          try {
+            val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+            startActivity(intent)
+          } catch (e2: Exception) {
+            e2.printStackTrace()
+          }
+        }
+      }
+    }
   }
 
   /**

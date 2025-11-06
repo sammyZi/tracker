@@ -8,10 +8,10 @@
  * - Haptic feedback
  */
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
-  Text,
+  Text as RNText,
   StyleSheet,
   ScrollView,
   Switch,
@@ -20,11 +20,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/theme';
-import StorageService from '../../services/storage/StorageService';
-import AudioAnnouncementService from '../../services/audio';
-import HapticFeedbackService from '../../services/haptic';
-import { UserSettings, UnitSystem } from '../../types';
+import { Text } from '../../components/common';
+import { Colors, Spacing } from '../../constants/theme';
+import { useSettings } from '../../context';
+import { useTheme } from '../../hooks';
+import { UnitSystem } from '../../types';
 
 const ANNOUNCEMENT_INTERVALS = [
   { label: '0.5 km', value: 500, imperial: 0.31 },
@@ -33,118 +33,63 @@ const ANNOUNCEMENT_INTERVALS = [
   { label: '2 km', value: 2000, imperial: 1.24 },
 ];
 
-export const SettingsScreen: React.FC = () => {
-  const [settings, setSettings] = useState<UserSettings>({
-    units: 'metric',
-    audioAnnouncements: true,
-    announcementInterval: 1000,
-    autoPause: false,
-    autoPauseSensitivity: 'medium',
-    mapType: 'standard',
-    theme: 'light',
-  });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
-    try {
-      const savedSettings = await StorageService.getSettings();
-      if (savedSettings) {
-        setSettings(savedSettings);
-        
-        // Apply settings to services
-        AudioAnnouncementService.updateSettings({
-          enabled: savedSettings.audioAnnouncements,
-          interval: savedSettings.announcementInterval,
-          units: savedSettings.units,
-        });
-      }
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const saveSettings = async (newSettings: UserSettings) => {
-    try {
-      await StorageService.saveSettings(newSettings);
-      setSettings(newSettings);
-      
-      // Apply settings to services
-      AudioAnnouncementService.updateSettings({
-        enabled: newSettings.audioAnnouncements,
-        interval: newSettings.announcementInterval,
-        units: newSettings.units,
-      });
-      
-      await HapticFeedbackService.success();
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      Alert.alert('Error', 'Failed to save settings');
-      await HapticFeedbackService.error();
-    }
-  };
-
-  const toggleAudioAnnouncements = async (value: boolean) => {
-    const newSettings = { ...settings, audioAnnouncements: value };
-    await saveSettings(newSettings);
-    
-    if (value) {
-      AudioAnnouncementService.enable();
-    } else {
-      AudioAnnouncementService.disable();
-    }
-  };
-
-  const setAnnouncementInterval = async (interval: number) => {
-    await HapticFeedbackService.selection();
-    const newSettings = { ...settings, announcementInterval: interval };
-    await saveSettings(newSettings);
-    AudioAnnouncementService.setInterval(interval);
-  };
-
-  const toggleUnits = async (units: UnitSystem) => {
-    await HapticFeedbackService.selection();
-    const newSettings = { ...settings, units };
-    await saveSettings(newSettings);
-    AudioAnnouncementService.setUnits(units);
-  };
+export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const {
+    settings,
+    loading,
+    toggleAudioAnnouncements,
+    setAnnouncementInterval,
+    setUnits,
+    setMapType,
+    updateSettings,
+    toggleHapticFeedback,
+    isHapticEnabled,
+  } = useSettings();
+  const { colors } = useTheme();
 
   const getIntervalLabel = (interval: number, units: UnitSystem): string => {
     const intervalOption = ANNOUNCEMENT_INTERVALS.find(i => i.value === interval);
     if (!intervalOption) return 'Custom';
-    
+
     if (units === 'imperial') {
       return `${intervalOption.imperial} mi`;
     }
     return intervalOption.label;
   };
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading settings...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Settings</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <Text variant="large" weight="bold" color={colors.textPrimary}>Settings</Text>
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Units Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Units</Text>
+        {/* Background Tracking Guide */}
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Help & Support</Text>
           
+          <TouchableOpacity
+            style={styles.settingRow}
+            onPress={() => navigation.navigate('BackgroundTrackingGuide')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingInfo}>
+              <Ionicons name="help-circle-outline" size={24} color={Colors.primary} />
+              <View style={styles.settingTextContainer}>
+                <Text style={styles.settingLabel}>Background Tracking Guide</Text>
+                <Text style={styles.settingDescription}>
+                  Prevent app from closing during workouts
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color={Colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Units Section */}
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Units</Text>
+
           <View style={styles.settingRow}>
             <View style={styles.settingInfo}>
               <Ionicons name="speedometer-outline" size={24} color={Colors.primary} />
@@ -161,7 +106,7 @@ export const SettingsScreen: React.FC = () => {
                   styles.segmentButton,
                   settings.units === 'metric' && styles.segmentButtonActive,
                 ]}
-                onPress={() => toggleUnits('metric')}
+                onPress={() => setUnits('metric')}
               >
                 <Text
                   style={[
@@ -177,7 +122,7 @@ export const SettingsScreen: React.FC = () => {
                   styles.segmentButton,
                   settings.units === 'imperial' && styles.segmentButtonActive,
                 ]}
-                onPress={() => toggleUnits('imperial')}
+                onPress={() => setUnits('imperial')}
               >
                 <Text
                   style={[
@@ -195,7 +140,7 @@ export const SettingsScreen: React.FC = () => {
         {/* Audio Announcements Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Audio Announcements</Text>
-          
+
           <View style={styles.settingRow}>
             <View style={styles.settingInfo}>
               <Ionicons name="volume-high-outline" size={24} color={Colors.primary} />
@@ -236,7 +181,7 @@ export const SettingsScreen: React.FC = () => {
                   style={[
                     styles.intervalButton,
                     settings.announcementInterval === interval.value &&
-                      styles.intervalButtonActive,
+                    styles.intervalButtonActive,
                   ]}
                   onPress={() => setAnnouncementInterval(interval.value)}
                 >
@@ -244,7 +189,7 @@ export const SettingsScreen: React.FC = () => {
                     style={[
                       styles.intervalButtonText,
                       settings.announcementInterval === interval.value &&
-                        styles.intervalButtonTextActive,
+                      styles.intervalButtonTextActive,
                     ]}
                   >
                     {settings.units === 'imperial'
@@ -257,10 +202,112 @@ export const SettingsScreen: React.FC = () => {
           )}
         </View>
 
+        {/* Auto-Pause Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Activity Tracking</Text>
+
+          <View style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <Ionicons name="pause-circle-outline" size={24} color={Colors.primary} />
+              <View style={styles.settingTextContainer}>
+                <Text style={styles.settingLabel}>Auto-Pause</Text>
+                <Text style={styles.settingDescription}>
+                  Automatically pause when stationary
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={settings.autoPause}
+              onValueChange={(value) => updateSettings({ autoPause: value })}
+              trackColor={{ false: Colors.border, true: Colors.primary }}
+              thumbColor="#fff"
+            />
+          </View>
+
+          {settings.autoPause && (
+            <>
+              <View style={styles.settingRow}>
+                <View style={styles.settingInfo}>
+                  <Ionicons name="options-outline" size={24} color={Colors.primary} />
+                  <View style={styles.settingTextContainer}>
+                    <Text style={styles.settingLabel}>Auto-Pause Sensitivity</Text>
+                    <Text style={styles.settingDescription}>
+                      Current: {settings.autoPauseSensitivity.charAt(0).toUpperCase() + settings.autoPauseSensitivity.slice(1)}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.intervalOptions}>
+                {(['low', 'medium', 'high'] as const).map((sensitivity) => (
+                  <TouchableOpacity
+                    key={sensitivity}
+                    style={[
+                      styles.intervalButton,
+                      settings.autoPauseSensitivity === sensitivity &&
+                      styles.intervalButtonActive,
+                    ]}
+                    onPress={() => updateSettings({ autoPauseSensitivity: sensitivity })}
+                  >
+                    <Text
+                      style={[
+                        styles.intervalButtonText,
+                        settings.autoPauseSensitivity === sensitivity &&
+                        styles.intervalButtonTextActive,
+                      ]}
+                    >
+                      {sensitivity.charAt(0).toUpperCase() + sensitivity.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
+        </View>
+
+        {/* Map Display Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Map Display</Text>
+
+          <View style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <Ionicons name="map-outline" size={24} color={Colors.primary} />
+              <View style={styles.settingTextContainer}>
+                <Text style={styles.settingLabel}>Map Type</Text>
+                <Text style={styles.settingDescription}>
+                  Current: {settings.mapType.charAt(0).toUpperCase() + settings.mapType.slice(1)}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.intervalOptions}>
+            {(['standard', 'satellite', 'hybrid'] as const).map((mapType) => (
+              <TouchableOpacity
+                key={mapType}
+                style={[
+                  styles.intervalButton,
+                  settings.mapType === mapType && styles.intervalButtonActive,
+                ]}
+                onPress={() => setMapType(mapType)}
+              >
+                <Text
+                  style={[
+                    styles.intervalButtonText,
+                    settings.mapType === mapType && styles.intervalButtonTextActive,
+                  ]}
+                >
+                  {mapType.charAt(0).toUpperCase() + mapType.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
         {/* Haptic Feedback Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Haptic Feedback</Text>
-          
+
           <View style={styles.settingRow}>
             <View style={styles.settingInfo}>
               <Ionicons name="phone-portrait-outline" size={24} color={Colors.primary} />
@@ -272,15 +319,8 @@ export const SettingsScreen: React.FC = () => {
               </View>
             </View>
             <Switch
-              value={HapticFeedbackService.isEnabled()}
-              onValueChange={(value) => {
-                if (value) {
-                  HapticFeedbackService.enable();
-                  HapticFeedbackService.success();
-                } else {
-                  HapticFeedbackService.disable();
-                }
-              }}
+              value={isHapticEnabled}
+              onValueChange={toggleHapticFeedback}
               trackColor={{ false: Colors.border, true: Colors.primary }}
               thumbColor="#fff"
             />
@@ -317,16 +357,12 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    height: 60,
+    paddingHorizontal: Spacing.lg,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontFamily: 'Poppins_700Bold',
-    color: Colors.textPrimary,
+    justifyContent: 'center',
   },
   scrollView: {
     flex: 1,
