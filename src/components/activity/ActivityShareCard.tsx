@@ -112,18 +112,6 @@ export const ActivityShareCard: React.FC<ActivityShareCardProps> = ({
                 </View>
 
                 <View style={styles.statBox}>
-                    <View style={[styles.statIcon, { backgroundColor: Colors.warning + '20' }]}>
-                        <Ionicons name="flash" size={40} color={Colors.warning} />
-                    </View>
-                    <Text variant="large" weight="bold" color={Colors.textPrimary} style={{ fontSize: 36 }}>
-                        {formatPace(activity.maxPace, units).split(' ')[0]}
-                    </Text>
-                    <Text variant="small" color={Colors.textSecondary} style={{ fontSize: 24 }}>
-                        Best Pace
-                    </Text>
-                </View>
-
-                <View style={styles.statBox}>
                     <View style={[styles.statIcon, { backgroundColor: Colors.primary + '20' }]}>
                         <Ionicons name="footsteps" size={40} color={Colors.primary} />
                     </View>

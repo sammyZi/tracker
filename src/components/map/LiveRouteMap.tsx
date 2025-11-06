@@ -34,6 +34,11 @@ export const LiveRouteMap: React.FC<LiveRouteMapProps> = ({
     }
   };
 
+  // Log when map type changes
+  React.useEffect(() => {
+    console.log('Map type changed to:', settings.mapType);
+  }, [settings.mapType]);
+
   // Center on first location
   React.useEffect(() => {
     if (currentLocation && mapRef.current && !hasInitialized) {

@@ -46,7 +46,7 @@ export const StaticRouteMap: React.FC<StaticRouteMapProps> = ({
     }
   };
 
-  // Calculate map region to fit the entire route
+  // Calculate map region to fit the entire route with minimal padding (zoomed in)
   const getMapRegion = () => {
     if (route.length === 0) {
       return {
@@ -67,14 +67,14 @@ export const StaticRouteMap: React.FC<StaticRouteMapProps> = ({
 
     const centerLat = (minLat + maxLat) / 2;
     const centerLng = (minLng + maxLng) / 2;
-    const latDelta = (maxLat - minLat) * 1.3; // Add 30% padding
-    const lngDelta = (maxLng - minLng) * 1.3;
+    const latDelta = (maxLat - minLat) * 1.1; // Add only 10% padding for zoomed view
+    const lngDelta = (maxLng - minLng) * 1.1;
 
     return {
       latitude: centerLat,
       longitude: centerLng,
-      latitudeDelta: Math.max(latDelta, 0.01),
-      longitudeDelta: Math.max(lngDelta, 0.01),
+      latitudeDelta: Math.max(latDelta, 0.005), // Minimum zoom level
+      longitudeDelta: Math.max(lngDelta, 0.005),
     };
   };
 
@@ -163,8 +163,9 @@ export const StaticRouteMap: React.FC<StaticRouteMapProps> = ({
         longitude: p.longitude,
       }));
       
+      // Use smaller edge padding for more zoomed-in view
       mapRef.current.fitToCoordinates(coordinates, {
-        edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+        edgePadding: { top: 30, right: 30, bottom: 30, left: 30 },
         animated: true,
       });
     }

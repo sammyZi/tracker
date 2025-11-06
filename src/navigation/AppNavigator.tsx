@@ -30,10 +30,18 @@ const HistoryStackNavigator = () => {
     <HistoryStack.Navigator
       screenOptions={{
         headerShown: false,
+        gestureEnabled: true,
+        animationEnabled: false,
       }}
     >
-      <HistoryStack.Screen name="ActivityHistory" component={ActivityHistoryScreen} />
-      <HistoryStack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
+      <HistoryStack.Screen 
+        name="ActivityHistory" 
+        component={ActivityHistoryScreen}
+      />
+      <HistoryStack.Screen 
+        name="ActivityDetail" 
+        component={ActivityDetailScreen}
+      />
     </HistoryStack.Navigator>
   );
 };
@@ -90,15 +98,6 @@ const AppNavigatorComponent: React.FC = () => {
           options={{
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="list" size={size} color={color} />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="Stats"
-          component={StatsScreen}
-          options={{
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="stats-chart" size={size} color={color} />
             ),
           }}
         />

@@ -22,7 +22,7 @@ interface UseActivityHistoryReturn {
   dateRangeFilter: 'all' | 'week' | 'month' | 'year';
   setActivityTypeFilter: (filter: ActivityType | 'all') => void;
   setDateRangeFilter: (filter: 'all' | 'week' | 'month' | 'year') => void;
-  refresh: () => Promise<void>;
+  refresh: (silent?: boolean) => Promise<void>;
   loadMore: () => Promise<void>;
   reload: () => Promise<void>;
 }
@@ -101,8 +101,10 @@ export const useActivityHistory = (
   /**
    * Refresh activities (pull-to-refresh)
    */
-  const refresh = useCallback(async () => {
-    setRefreshing(true);
+  const refresh = useCallback(async (silent: boolean = false) => {
+    if (!silent) {
+      setRefreshing(true);
+    }
     await loadActivities(true);
   }, [loadActivities]);
 

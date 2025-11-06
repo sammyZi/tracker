@@ -18,6 +18,7 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,23 +26,34 @@ import * as ImagePicker from 'expo-image-picker';
 import { Text, ConfirmModal } from '../../components/common';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
+import { StatCard } from '../../components/stats/StatCard';
+import { PersonalRecordsCard } from '../../components/stats/PersonalRecordsCard';
 import { useConfirmModal } from '../../hooks/useConfirmModal';
+import { useStatistics } from '../../hooks/useStatistics';
 import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import StorageService from '../../services/storage/StorageService';
-import { UserProfile, UserSettings } from '../../types';
-import { formatDistanceValue, formatDuration } from '../../utils/formatting';
+import { UserProfile, UserSettings, StatsPeriod } from '../../types';
+import { formatDistanceValue, formatDuration, formatDistance, formatPace, formatCalories } from '../../utils/formatting';
+
+type TabType = 'week' | 'month' | 'allTime';
+
+const TABS: { key: TabType; label: string }[] = [
+  { key: 'week', label: 'Week' },
+  { key: 'month', label: 'Month' },
+  { key: 'allTime', label: 'All Time' },
+];
 
 export const ProfileScreen: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<TabType>('week');
   const { modalState, showConfirm, hideModal } = useConfirmModal();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [settings, setSettings] = useState<UserSettings | null>(null);
-  const [stats, setStats] = useState({
-    totalActivities: 0,
-    totalDistance: 0,
-    totalDuration: 0,
-  });
   const [loading, setLoading] = useState(true);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  
+  // Use statistics hook for detailed stats
+  const { stats, loading: statsLoading, refresh: refreshStats } = useStatistics(activeTab as StatsPeriod);
   
   // Edit form state
   const [editName, setEditName] = useState('');
@@ -50,8 +62,13 @@ export const ProfileScreen: React.FC = () => {
 
   useEffect(() => {
     loadProfile();
-    loadStats();
   }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([loadProfile(), refreshStats()]);
+    setRefreshing(false);
+  };
 
   const loadProfile = async () => {
     try {
@@ -84,18 +101,7 @@ export const ProfileScreen: React.FC = () => {
     }
   };
 
-  const loadStats = async () => {
-    try {
-      const allTimeStats = await StorageService.getStatistics('allTime');
-      setStats({
-        totalActivities: allTimeStats.totalActivities,
-        totalDistance: allTimeStats.totalDistance,
-        totalDuration: allTimeStats.totalDuration,
-      });
-    } catch (error) {
-      console.error('Error loading stats:', error);
-    }
-  };
+
 
   const handlePickImage = async () => {
     try {
@@ -208,15 +214,94 @@ export const ProfileScreen: React.FC = () => {
     setEditModalVisible(true);
   };
 
+  const renderTabBar = () => (
+    <View style={styles.tabBar}>
+      {TABS.map((tab) => (
+        <TouchableOpacity
+          key={tab.key}
+          style={[styles.tab, activeTab === tab.key && styles.activeTab]}
+          onPress={() => setActiveTab(tab.key)}
+        >
+          <Text
+            variant="medium"
+            weight={activeTab === tab.key ? 'semiBold' : 'regular'}
+            color={activeTab === tab.key ? Colors.primary : Colors.textSecondary}
+          >
+            {tab.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  const renderStatsCards = () => {
+    if (!stats) return null;
+
+    return (
+      <View style={styles.statsCardsGrid}>
+        <StatCard
+          icon="map"
+          label="Distance"
+          value={formatDistance(stats.totalDistance, settings?.units || 'metric')}
+          color={Colors.primary}
+        />
+        <StatCard
+          icon="time"
+          label="Time"
+          value={formatDuration(stats.totalDuration)}
+          color={Colors.success}
+        />
+        <StatCard
+          icon="fitness"
+          label="Activities"
+          value={stats.totalActivities.toString()}
+          color={Colors.info}
+        />
+        <StatCard
+          icon="speedometer"
+          label="Avg Pace"
+          value={
+            stats.averagePace > 0
+              ? formatPace(stats.averagePace, settings?.units || 'metric')
+              : '--:--'
+          }
+          color={Colors.warning}
+        />
+        <StatCard
+          icon="walk"
+          label="Steps"
+          value={stats.totalSteps.toLocaleString()}
+          color={Colors.primary}
+        />
+        <StatCard
+          icon="flame"
+          label="Calories"
+          value={formatCalories(stats.totalCalories)}
+          color={Colors.error}
+        />
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text variant="large" weight="bold" color={Colors.textPrimary}>
-          Profile
+          Profile & Stats
         </Text>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={Colors.primary}
+          />
+        }
+      >
         {/* Profile Picture and Name */}
         <Card style={styles.profileCard}>
           <View style={styles.profileHeader}>
@@ -254,43 +339,37 @@ export const ProfileScreen: React.FC = () => {
           </View>
         </Card>
 
-        {/* Stats Summary */}
-        <View style={styles.statsContainer}>
+        {/* Statistics Section */}
+        <View style={styles.statsSection}>
           <Text variant="medium" weight="semiBold" style={styles.sectionTitle}>
-            Your Stats
+            Statistics
           </Text>
           
-          <View style={styles.statsGrid}>
-            <Card style={styles.statCard}>
-              <Ionicons name="fitness" size={24} color={Colors.primary} />
-              <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
-                {stats.totalActivities}
+          {renderTabBar()}
+          
+          {statsLoading && !stats ? (
+            <View style={styles.statsLoading}>
+              <Text variant="small" color={Colors.textSecondary}>Loading stats...</Text>
+            </View>
+          ) : stats && stats.totalActivities > 0 ? (
+            <>
+              {renderStatsCards()}
+              
+              {/* Personal Records */}
+              {stats.personalRecords && (
+                <View style={styles.recordsContainer}>
+                  <PersonalRecordsCard records={stats.personalRecords} units={settings?.units || 'metric'} />
+                </View>
+              )}
+            </>
+          ) : (
+            <View style={styles.emptyStats}>
+              <Ionicons name="stats-chart-outline" size={48} color={Colors.textSecondary} />
+              <Text variant="medium" color={Colors.textSecondary} align="center" style={styles.emptyText}>
+                No activities yet. Start tracking to see your stats!
               </Text>
-              <Text variant="extraSmall" color={Colors.textSecondary}>
-                Activities
-              </Text>
-            </Card>
-
-            <Card style={styles.statCard}>
-              <Ionicons name="navigate" size={24} color={Colors.success} />
-              <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
-                {formatDistanceValue(stats.totalDistance, settings?.units || 'metric', 1)}
-              </Text>
-              <Text variant="extraSmall" color={Colors.textSecondary}>
-                {settings?.units === 'imperial' ? 'Miles' : 'Kilometers'}
-              </Text>
-            </Card>
-
-            <Card style={styles.statCard}>
-              <Ionicons name="time" size={24} color={Colors.warning} />
-              <Text variant="medium" weight="bold" color={Colors.textPrimary}>
-                {formatDuration(stats.totalDuration)}
-              </Text>
-              <Text variant="extraSmall" color={Colors.textSecondary}>
-                Total Time
-              </Text>
-            </Card>
-          </View>
+            </View>
+          )}
         </View>
 
         {/* Profile Details */}
@@ -609,5 +688,49 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     flex: 1,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: Colors.surface,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+    gap: Spacing.md,
+    marginTop: Spacing.md,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    borderRadius: BorderRadius.medium,
+    backgroundColor: Colors.background,
+  },
+  activeTab: {
+    backgroundColor: `${Colors.primary}15`,
+  },
+  statsSection: {
+    marginBottom: Spacing.xl,
+  },
+  statsCardsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    marginTop: Spacing.md,
+  },
+  statsLoading: {
+    padding: Spacing.xl,
+    alignItems: 'center',
+  },
+  emptyStats: {
+    padding: Spacing.xxxl,
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  emptyText: {
+    marginTop: Spacing.md,
+  },
+  recordsContainer: {
+    paddingHorizontal: Spacing.lg,
+    marginTop: Spacing.lg,
   },
 });

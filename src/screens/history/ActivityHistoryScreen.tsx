@@ -3,7 +3,7 @@
  * Displays a scrollable list of past activities with filtering and pull-to-refresh
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -11,8 +11,11 @@ import {
   RefreshControl,
   TouchableOpacity,
   Modal,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../../components/common';
 import { ActivityCard } from '../../components/activity';
@@ -24,9 +27,10 @@ import StorageService from '../../services/storage/StorageService';
 
 interface ActivityHistoryScreenProps {
   navigation: any;
+  route?: any;
 }
 
-export const ActivityHistoryScreen: React.FC<ActivityHistoryScreenProps> = ({ navigation }) => {
+const ActivityHistoryScreenComponent: React.FC<ActivityHistoryScreenProps> = ({ navigation, route }) => {
   const {
     activities,
     loading,
@@ -53,16 +57,53 @@ export const ActivityHistoryScreen: React.FC<ActivityHistoryScreenProps> = ({ na
     loadSettings();
   }, []);
 
-  const handleActivityPress = (activity: Activity) => {
-    navigation.navigate('ActivityDetail', { activityId: activity.id });
-  };
+  // Silent refresh when coming back after delete (no loading indicator)
+  useFocusEffect(
+    useCallback(() => {
+      if (route?.params?.refresh) {
+        console.log('Refresh param detected, silently refreshing list');
+        // Use silent refresh to avoid flickering
+        refresh(true);
+        // Clear the param immediately to prevent loops
+        navigation.setParams({ refresh: undefined });
+      }
+    }, [route?.params?.refresh, navigation, refresh])
+  );
 
-  const renderActivityCard = ({ item }: { item: Activity }) => (
-    <ActivityCard
-      activity={item}
-      onPress={() => handleActivityPress(item)}
-      units={units}
-    />
+  const isNavigatingRef = React.useRef(false);
+
+  const handleActivityPress = React.useCallback((activity: Activity) => {
+    if (isNavigatingRef.current) return; // Prevent double tap
+
+    isNavigatingRef.current = true;
+    navigation.navigate('ActivityDetail', { activityId: activity.id });
+
+    // Reset after navigation
+    setTimeout(() => {
+      isNavigatingRef.current = false;
+    }, 1000);
+  }, [navigation]);
+
+  const renderActivityCard = React.useCallback(
+    ({ item }: { item: Activity }) => (
+      <ActivityCard
+        activity={item}
+        onPress={() => handleActivityPress(item)}
+        units={units}
+      />
+    ),
+    [handleActivityPress, units]
+  );
+
+  const keyExtractor = React.useCallback((item: Activity) => item.id, []);
+
+  const getItemLayout = React.useCallback(
+    (_: any, index: number) => ({
+      length: 120, // Approximate card height
+      offset: 120 * index,
+      index,
+    }),
+    []
   );
 
   const handleRefresh = () => {
@@ -75,7 +116,7 @@ export const ActivityHistoryScreen: React.FC<ActivityHistoryScreenProps> = ({ na
     }
   };
 
-  const renderListHeader = () => (
+  const renderListHeader = React.useCallback(() => (
     <View style={styles.header}>
       <Text variant="large" weight="bold" color={Colors.textPrimary}>
         Activity History
@@ -90,11 +131,11 @@ export const ActivityHistoryScreen: React.FC<ActivityHistoryScreenProps> = ({ na
         )}
       </TouchableOpacity>
     </View>
-  );
+  ), [activityTypeFilter, dateRangeFilter]);
 
-  const renderListFooter = () => {
+  const renderListFooter = React.useCallback(() => {
     if (!hasMore || activities.length === 0) return null;
-    
+
     return (
       <View style={styles.footer}>
         <Text variant="small" color={Colors.textSecondary}>
@@ -102,7 +143,7 @@ export const ActivityHistoryScreen: React.FC<ActivityHistoryScreenProps> = ({ na
         </Text>
       </View>
     );
-  };
+  }, [hasMore, activities.length, loading]);
 
   const renderEmptyState = () => (
     <EmptyState
@@ -217,12 +258,14 @@ export const ActivityHistoryScreen: React.FC<ActivityHistoryScreenProps> = ({ na
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
+      <View style={styles.statusBarSpacer} />
+      {renderListHeader()}
       <FlatList
         data={activities}
         renderItem={renderActivityCard}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={renderListHeader}
+        keyExtractor={keyExtractor}
+        getItemLayout={getItemLayout}
         ListFooterComponent={renderListFooter}
         ListEmptyComponent={!loading ? renderEmptyState : null}
         contentContainerStyle={[
@@ -240,16 +283,28 @@ export const ActivityHistoryScreen: React.FC<ActivityHistoryScreenProps> = ({ na
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         showsVerticalScrollIndicator={false}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={5}
+        updateCellsBatchingPeriod={100}
+        initialNumToRender={8}
+        windowSize={5}
       />
       {renderFilterModal()}
-    </SafeAreaView>
+    </View>
   );
 };
+
+// Memoize the component to prevent unnecessary re-renders
+export const ActivityHistoryScreen = React.memo(ActivityHistoryScreenComponent);
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 44,
+  },
+  statusBarSpacer: {
+    height: 0, // Padding is on container now
   },
   listContent: {
     paddingHorizontal: Spacing.lg,
@@ -263,6 +318,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    backgroundColor: Colors.background,
     marginBottom: Spacing.md,
   },
   filterButton: {
@@ -287,7 +344,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xl,
     alignItems: 'center',
   },
-  
+
   // Modal styles
   modalOverlay: {
     flex: 1,

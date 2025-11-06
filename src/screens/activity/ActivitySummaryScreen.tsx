@@ -144,11 +144,11 @@ export const ActivitySummaryScreen: React.FC<ActivitySummaryScreenProps> = ({
               <Text style={styles.statItemValue}>{activity.steps.toLocaleString()}</Text>
             </View>
 
-            {activity.maxPace > 0 && (
+            {activity.averagePace > 0 && (
               <View style={styles.statItem}>
-                <Ionicons name="flash-outline" size={20} color={Colors.textSecondary} />
-                <Text style={styles.statItemLabel}>Best Pace</Text>
-                <Text style={styles.statItemValue}>{formatPace(activity.maxPace)}</Text>
+                <Ionicons name="speedometer-outline" size={20} color={Colors.textSecondary} />
+                <Text style={styles.statItemLabel}>Avg Pace</Text>
+                <Text style={styles.statItemValue}>{formatPace(activity.averagePace)}</Text>
               </View>
             )}
 
