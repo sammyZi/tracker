@@ -166,10 +166,10 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
             <Ionicons name="shield-checkmark" size={64} color={Colors.primary} />
           </View>
           <Text variant="extraLarge" weight="bold" color={Colors.textPrimary} align="center">
-            Permissions Required
+            Welcome to Fitness Tracker
           </Text>
           <Text variant="regular" color={Colors.textSecondary} align="center" style={styles.subtitle}>
-            To track your activities, we need access to the following:
+            To provide accurate activity tracking, we need a few permissions. Your data stays private and secure on your device.
           </Text>
         </View>
 
@@ -192,7 +192,7 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
               {getPermissionIcon(permissions.location)}
             </View>
             <Text variant="small" color={Colors.textSecondary} style={styles.permissionDescription}>
-              Track your route, distance, and pace during activities
+              Essential for tracking your route, distance, speed, and pace during workouts. Without this, the app cannot function.
             </Text>
           </View>
 
@@ -213,7 +213,7 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
               {getPermissionIcon(permissions.backgroundLocation)}
             </View>
             <Text variant="small" color={Colors.textSecondary} style={styles.permissionDescription}>
-              Continue tracking even when app is in background
+              Allows continuous tracking when your screen is off or you're using other apps. Highly recommended for accurate workout data.
             </Text>
           </View>
 
@@ -234,17 +234,36 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
               {getPermissionIcon(permissions.motion)}
             </View>
             <Text variant="small" color={Colors.textSecondary} style={styles.permissionDescription}>
-              Count your steps during activities
+              Enables step counting and activity recognition for more detailed workout insights. Optional but enhances your experience.
             </Text>
           </View>
         </View>
 
-        {/* Privacy Note */}
-        <View style={styles.privacyNote}>
-          <Ionicons name="lock-closed" size={20} color={Colors.textSecondary} />
-          <Text variant="small" color={Colors.textSecondary} style={styles.privacyText}>
-            Your location data is stored locally on your device and never shared without your permission.
-          </Text>
+        {/* Privacy & Battery Note */}
+        <View style={styles.infoSection}>
+          <View style={styles.infoCard}>
+            <Ionicons name="lock-closed" size={24} color={Colors.success} />
+            <View style={styles.infoContent}>
+              <Text variant="medium" weight="semiBold" color={Colors.textPrimary}>
+                Privacy First
+              </Text>
+              <Text variant="small" color={Colors.textSecondary} style={styles.infoText}>
+                All your data is stored locally on your device. We never collect, share, or sell your location data.
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.infoCard}>
+            <Ionicons name="battery-charging" size={24} color={Colors.primary} />
+            <View style={styles.infoContent}>
+              <Text variant="medium" weight="semiBold" color={Colors.textPrimary}>
+                Battery Optimized
+              </Text>
+              <Text variant="small" color={Colors.textSecondary} style={styles.infoText}>
+                We use efficient GPS tracking and foreground services to minimize battery drain during workouts.
+              </Text>
+            </View>
+          </View>
         </View>
       </ScrollView>
 
@@ -353,16 +372,23 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
     lineHeight: 20,
   },
-  privacyNote: {
+  infoSection: {
+    gap: Spacing.md,
+  },
+  infoCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.medium,
+    borderRadius: BorderRadius.large,
     padding: Spacing.lg,
-    gap: Spacing.sm,
+    gap: Spacing.md,
+    ...Shadows.small,
   },
-  privacyText: {
+  infoContent: {
     flex: 1,
+  },
+  infoText: {
+    marginTop: Spacing.xs,
     lineHeight: 20,
   },
   actions: {

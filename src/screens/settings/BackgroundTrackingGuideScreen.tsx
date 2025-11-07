@@ -13,11 +13,13 @@ import {
   TouchableOpacity,
   Linking,
   Platform,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Text } from '../../components/common';
-import { Colors, Spacing } from '../../constants/theme';
+import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { useTheme } from '../../hooks';
 
 interface GuideStepProps {
@@ -29,17 +31,28 @@ interface GuideStepProps {
 
 const GuideStep: React.FC<GuideStepProps> = ({ number, title, description, icon }) => {
   const { colors } = useTheme();
-  
+
   return (
     <View style={[styles.stepContainer, { backgroundColor: colors.surface }]}>
-      <View style={styles.stepHeader}>
-        <View style={[styles.stepNumber, { backgroundColor: Colors.primary }]}>
-          <Text style={styles.stepNumberText}>{number}</Text>
+      <View style={styles.stepContent}>
+        <View style={styles.stepNumberContainer}>
+          <LinearGradient
+            colors={[Colors.primary, Colors.primaryLight]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.stepNumber}
+          >
+            <Text style={styles.stepNumberText}>{number}</Text>
+          </LinearGradient>
         </View>
-        <Ionicons name={icon} size={24} color={Colors.primary} style={styles.stepIcon} />
-        <Text style={styles.stepTitle}>{title}</Text>
+        <View style={styles.stepTextContainer}>
+          <View style={styles.stepTitleRow}>
+            <Ionicons name={icon} size={22} color={Colors.primary} />
+            <Text style={styles.stepTitle}>{title}</Text>
+          </View>
+          <Text style={styles.stepDescription}>{description}</Text>
+        </View>
       </View>
-      <Text style={styles.stepDescription}>{description}</Text>
     </View>
   );
 };
@@ -53,6 +66,16 @@ interface ManufacturerGuideProps {
 const ManufacturerGuide: React.FC<ManufacturerGuideProps> = ({ manufacturer, steps, icon }) => {
   const { colors } = useTheme();
   const [expanded, setExpanded] = React.useState(false);
+  const animatedHeight = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    Animated.spring(animatedHeight, {
+      toValue: expanded ? 1 : 0,
+      useNativeDriver: false,
+      tension: 50,
+      friction: 8,
+    }).start();
+  }, [expanded]);
 
   return (
     <View style={[styles.manufacturerContainer, { backgroundColor: colors.surface }]}>
@@ -61,22 +84,26 @@ const ManufacturerGuide: React.FC<ManufacturerGuideProps> = ({ manufacturer, ste
         onPress={() => setExpanded(!expanded)}
         activeOpacity={0.7}
       >
-        <View style={styles.manufacturerTitleRow}>
+        <View style={styles.manufacturerIconWrapper}>
           <Ionicons name={icon} size={24} color={Colors.primary} />
-          <Text style={styles.manufacturerTitle}>{manufacturer}</Text>
         </View>
-        <Ionicons
-          name={expanded ? 'chevron-up' : 'chevron-down'}
-          size={24}
-          color={Colors.textSecondary}
-        />
+        <Text style={styles.manufacturerTitle}>{manufacturer}</Text>
+        <View style={[styles.chevronContainer, expanded && styles.chevronExpanded]}>
+          <Ionicons
+            name="chevron-down"
+            size={20}
+            color={Colors.textSecondary}
+          />
+        </View>
       </TouchableOpacity>
-      
+
       {expanded && (
         <View style={styles.manufacturerSteps}>
           {steps.map((step, index) => (
             <View key={index} style={styles.manufacturerStep}>
-              <View style={styles.bulletPoint} />
+              <View style={styles.stepBadge}>
+                <Text style={styles.stepBadgeText}>{index + 1}</Text>
+              </View>
               <Text style={styles.manufacturerStepText}>{step}</Text>
             </View>
           ))}
@@ -106,76 +133,217 @@ export const BackgroundTrackingGuideScreen: React.FC<{ navigation: any }> = ({ n
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Introduction */}
-        <View style={[styles.introSection, { backgroundColor: Colors.primaryLight }]}>
-          <Ionicons name="information-circle" size={32} color={Colors.primary} />
-          <Text style={styles.introTitle}>Keep Your Workouts Running</Text>
-          <Text style={styles.introText}>
-            Android aggressively manages battery by closing background apps. Follow these steps to ensure your workouts continue tracking even when the app is in the background.
+        {/* Hero Introduction */}
+        <LinearGradient
+          colors={[Colors.primary + '20', Colors.primaryLight + '10']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroSection}
+        >
+          <View style={styles.heroIconContainer}>
+            <LinearGradient
+              colors={[Colors.primary, Colors.primaryLight]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.heroIconGradient}
+            >
+              <Ionicons name="shield-checkmark" size={48} color="#fff" />
+            </LinearGradient>
+          </View>
+          <Text style={styles.heroTitle}>Keep Your Workouts Running</Text>
+          <Text style={styles.heroSubtitle}>
+            Android's battery optimization can stop background tracking. Follow this guide to ensure uninterrupted workout tracking.
           </Text>
-        </View>
+        </LinearGradient>
 
         {/* Automatic Setup */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>✓ Automatic Setup</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="checkmark-done-circle" size={28} color={Colors.success} />
+            <Text style={styles.sectionTitle}>Automatic Setup</Text>
+          </View>
           <Text style={styles.sectionDescription}>
-            The app automatically handles these for you:
+            The app automatically handles these optimizations:
           </Text>
-          
-          <View style={[styles.autoFeature, { backgroundColor: colors.surface }]}>
-            <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
-            <Text style={styles.autoFeatureText}>Battery optimization exemption request</Text>
-          </View>
-          <View style={[styles.autoFeature, { backgroundColor: colors.surface }]}>
-            <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
-            <Text style={styles.autoFeatureText}>Foreground service with notification</Text>
-          </View>
-          <View style={[styles.autoFeature, { backgroundColor: colors.surface }]}>
-            <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
-            <Text style={styles.autoFeatureText}>Separate background process</Text>
+
+          <View style={styles.featuresContainer}>
+            <View style={styles.featuresRow}>
+              <View style={[styles.featureCard, { backgroundColor: colors.surface }]}>
+                <View style={[styles.featureIconContainer, { backgroundColor: Colors.success + '15' }]}>
+                  <Ionicons name="battery-charging" size={28} color={Colors.success} />
+                </View>
+                <Text style={styles.featureTitle} numberOfLines={2}>Battery Exemption</Text>
+                <Text style={styles.featureDescription} numberOfLines={2}>Requests optimization bypass</Text>
+              </View>
+
+              <View style={[styles.featureCard, { backgroundColor: colors.surface }]}>
+                <View style={[styles.featureIconContainer, { backgroundColor: Colors.info + '15' }]}>
+                  <Ionicons name="notifications" size={28} color={Colors.info} />
+                </View>
+                <Text style={styles.featureTitle} numberOfLines={2}>Foreground Service</Text>
+                <Text style={styles.featureDescription} numberOfLines={2}>Persistent notification</Text>
+              </View>
+            </View>
+
+            <View style={styles.featuresRow}>
+              <View style={[styles.featureCard, { backgroundColor: colors.surface }]}>
+                <View style={[styles.featureIconContainer, { backgroundColor: Colors.primary + '15' }]}>
+                  <Ionicons name="layers" size={28} color={Colors.primary} />
+                </View>
+                <Text style={styles.featureTitle} numberOfLines={2}>Background Process</Text>
+                <Text style={styles.featureDescription} numberOfLines={2}>Separate tracking thread</Text>
+              </View>
+
+              <View style={styles.featureCardPlaceholder} />
+            </View>
           </View>
         </View>
 
         {/* Manual Steps */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Manual Steps (If App Still Closes)</Text>
-          
-          <GuideStep
-            number={1}
-            title="Disable Battery Optimization"
-            description="Settings → Apps → Fitness Tracker → Battery → Battery optimization → Select 'All apps' → Find 'Fitness Tracker' → Select 'Don't optimize'"
-            icon="battery-charging"
-          />
+          <View style={styles.sectionHeader}>
+            <Ionicons name="construct" size={28} color={Colors.warning} />
+            <Text style={styles.sectionTitle}>Manual Setup</Text>
+          </View>
+          <Text style={styles.sectionDescription}>
+            If the app still closes in background, follow these 3 simple steps:
+          </Text>
 
-          <GuideStep
-            number={2}
-            title="Allow Background Activity"
-            description="Settings → Apps → Fitness Tracker → Battery → Enable 'Allow background activity' and 'Unrestricted data usage'"
-            icon="play-circle"
-          />
+          {/* Step 1 */}
+          <View style={[styles.manualStepCard, { backgroundColor: colors.surface }]}>
+            <View style={styles.manualStepHeader}>
+              <View style={[styles.manualStepNumber, { backgroundColor: Colors.success }]}>
+                <Text style={styles.manualStepNumberText}>1</Text>
+              </View>
+              <View style={styles.manualStepTitleContainer}>
+                <Text style={styles.manualStepTitle}>Turn Off Battery Optimization</Text>
+                <Text style={styles.manualStepSubtitle}>Most important step</Text>
+              </View>
+            </View>
+            <View style={styles.manualStepContent}>
+              <View style={styles.pathStep}>
+                <Ionicons name="settings-outline" size={18} color={Colors.primary} />
+                <Text style={styles.pathText}>Open Settings</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} style={styles.pathArrow} />
+              <View style={styles.pathStep}>
+                <Ionicons name="apps-outline" size={18} color={Colors.primary} />
+                <Text style={styles.pathText}>Apps</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} style={styles.pathArrow} />
+              <View style={styles.pathStep}>
+                <Ionicons name="fitness-outline" size={18} color={Colors.primary} />
+                <Text style={styles.pathText}>Fitness Tracker</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} style={styles.pathArrow} />
+              <View style={styles.pathStep}>
+                <Ionicons name="battery-charging-outline" size={18} color={Colors.primary} />
+                <Text style={styles.pathText}>Battery</Text>
+              </View>
+            </View>
+            <View style={[styles.actionBox, { backgroundColor: Colors.success + '10', borderColor: Colors.success }]}>
+              <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
+              <Text style={styles.actionText}>Select "Don't optimize" or "Unrestricted"</Text>
+            </View>
+          </View>
 
-          <GuideStep
-            number={3}
-            title="Lock App in Recent Apps"
-            description="Open Recent Apps (square button) → Find Fitness Tracker → Tap app icon → Select 'Lock' or 'Pin'"
-            icon="lock-closed"
-          />
+          {/* Step 2 */}
+          <View style={[styles.manualStepCard, { backgroundColor: colors.surface }]}>
+            <View style={styles.manualStepHeader}>
+              <View style={[styles.manualStepNumber, { backgroundColor: Colors.info }]}>
+                <Text style={styles.manualStepNumberText}>2</Text>
+              </View>
+              <View style={styles.manualStepTitleContainer}>
+                <Text style={styles.manualStepTitle}>Allow Background Activity</Text>
+                <Text style={styles.manualStepSubtitle}>Keep app running</Text>
+              </View>
+            </View>
+            <View style={styles.manualStepContent}>
+              <View style={styles.pathStep}>
+                <Ionicons name="settings-outline" size={18} color={Colors.primary} />
+                <Text style={styles.pathText}>Settings</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} style={styles.pathArrow} />
+              <View style={styles.pathStep}>
+                <Ionicons name="apps-outline" size={18} color={Colors.primary} />
+                <Text style={styles.pathText}>Apps</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} style={styles.pathArrow} />
+              <View style={styles.pathStep}>
+                <Ionicons name="fitness-outline" size={18} color={Colors.primary} />
+                <Text style={styles.pathText}>Fitness Tracker</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} style={styles.pathArrow} />
+              <View style={styles.pathStep}>
+                <Ionicons name="battery-charging-outline" size={18} color={Colors.primary} />
+                <Text style={styles.pathText}>Battery</Text>
+              </View>
+            </View>
+            <View style={[styles.actionBox, { backgroundColor: Colors.info + '10', borderColor: Colors.info }]}>
+              <Ionicons name="toggle" size={20} color={Colors.info} />
+              <Text style={styles.actionText}>Enable "Allow background activity"</Text>
+            </View>
+          </View>
+
+          {/* Step 3 */}
+          <View style={[styles.manualStepCard, { backgroundColor: colors.surface }]}>
+            <View style={styles.manualStepHeader}>
+              <View style={[styles.manualStepNumber, { backgroundColor: Colors.primary }]}>
+                <Text style={styles.manualStepNumberText}>3</Text>
+              </View>
+              <View style={styles.manualStepTitleContainer}>
+                <Text style={styles.manualStepTitle}>Lock App in Recent Apps</Text>
+                <Text style={styles.manualStepSubtitle}>Prevent auto-close</Text>
+              </View>
+            </View>
+            <View style={styles.manualStepContent}>
+              <View style={styles.pathStep}>
+                <Ionicons name="square-outline" size={18} color={Colors.primary} />
+                <Text style={styles.pathText}>Recent Apps Button</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} style={styles.pathArrow} />
+              <View style={styles.pathStep}>
+                <Ionicons name="fitness-outline" size={18} color={Colors.primary} />
+                <Text style={styles.pathText}>Find App</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} style={styles.pathArrow} />
+              <View style={styles.pathStep}>
+                <Ionicons name="ellipsis-vertical" size={18} color={Colors.primary} />
+                <Text style={styles.pathText}>Tap Icon</Text>
+              </View>
+            </View>
+            <View style={[styles.actionBox, { backgroundColor: Colors.primary + '10', borderColor: Colors.primary }]}>
+              <Ionicons name="lock-closed" size={20} color={Colors.primary} />
+              <Text style={styles.actionText}>Select "Lock" or "Pin"</Text>
+            </View>
+          </View>
 
           <TouchableOpacity
-            style={[styles.settingsButton, { backgroundColor: Colors.primary }]}
+            style={styles.settingsButton}
             onPress={openBatterySettings}
             activeOpacity={0.8}
           >
-            <Ionicons name="settings" size={20} color="#fff" />
-            <Text style={styles.settingsButtonText}>Open App Settings</Text>
+            <LinearGradient
+              colors={[Colors.primary, Colors.primaryLight]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.settingsButtonGradient}
+            >
+              <Ionicons name="settings-sharp" size={22} color="#fff" />
+              <Text style={styles.settingsButtonText}>Open Device Settings</Text>
+              <Ionicons name="arrow-forward" size={20} color="#fff" />
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 
         {/* Manufacturer-Specific */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Manufacturer-Specific Settings</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="phone-portrait" size={28} color={Colors.info} />
+            <Text style={styles.sectionTitle}>Device-Specific Settings</Text>
+          </View>
           <Text style={styles.sectionDescription}>
-            Some manufacturers have additional battery optimization. Tap your device brand:
+            Different manufacturers have unique battery settings. Tap your device brand below:
           </Text>
 
           <ManufacturerGuide
@@ -234,71 +402,90 @@ export const BackgroundTrackingGuideScreen: React.FC<{ navigation: any }> = ({ n
 
         {/* Verification */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Verification Steps</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="checkmark-done" size={28} color={Colors.success} />
+            <Text style={styles.sectionTitle}>Test Your Setup</Text>
+          </View>
           <Text style={styles.sectionDescription}>
-            To verify background tracking is working:
+            Follow these steps to verify everything works:
           </Text>
 
-          <View style={[styles.verificationStep, { backgroundColor: colors.surface }]}>
-            <Text style={styles.verificationNumber}>1</Text>
-            <Text style={styles.verificationText}>Start a workout</Text>
-          </View>
-          <View style={[styles.verificationStep, { backgroundColor: colors.surface }]}>
-            <Text style={styles.verificationNumber}>2</Text>
-            <Text style={styles.verificationText}>Press home button (don't swipe away)</Text>
-          </View>
-          <View style={[styles.verificationStep, { backgroundColor: colors.surface }]}>
-            <Text style={styles.verificationNumber}>3</Text>
-            <Text style={styles.verificationText}>You should see a persistent notification</Text>
-          </View>
-          <View style={[styles.verificationStep, { backgroundColor: colors.surface }]}>
-            <Text style={styles.verificationNumber}>4</Text>
-            <Text style={styles.verificationText}>Wait 2-3 minutes</Text>
-          </View>
-          <View style={[styles.verificationStep, { backgroundColor: colors.surface }]}>
-            <Text style={styles.verificationNumber}>5</Text>
-            <Text style={styles.verificationText}>Return to app - distance should have increased</Text>
+          <View style={styles.verificationContainer}>
+            {[
+              { icon: 'play-circle', text: 'Start a workout', color: Colors.primary },
+              { icon: 'home', text: 'Press home button (don\'t swipe away)', color: Colors.info },
+              { icon: 'notifications', text: 'Check for persistent notification', color: Colors.warning },
+              { icon: 'time', text: 'Wait 2-3 minutes', color: Colors.success },
+              { icon: 'checkmark-circle', text: 'Return - distance should increase', color: Colors.success },
+            ].map((step, index) => (
+              <View key={index} style={[styles.verificationStep, { backgroundColor: colors.surface }]}>
+                <View style={[styles.verificationIcon, { backgroundColor: step.color + '15' }]}>
+                  <Ionicons name={step.icon as any} size={20} color={step.color} />
+                </View>
+                <View style={styles.verificationContent}>
+                  <Text style={styles.verificationNumber}>Step {index + 1}</Text>
+                  <Text style={styles.verificationText}>{step.text}</Text>
+                </View>
+              </View>
+            ))}
           </View>
         </View>
 
         {/* Troubleshooting */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Troubleshooting</Text>
-
-          <View style={[styles.troubleshootItem, { backgroundColor: colors.surface }]}>
-            <Ionicons name="alert-circle" size={24} color={Colors.warning} />
-            <View style={styles.troubleshootContent}>
-              <Text style={styles.troubleshootTitle}>App still closes after 5-10 minutes</Text>
-              <Text style={styles.troubleshootText}>
-                • Complete ALL steps above{'\n'}
-                • Try disabling Adaptive Battery{'\n'}
-                • Ensure location is "Allow all the time"
-              </Text>
-            </View>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="help-buoy" size={28} color={Colors.error} />
+            <Text style={styles.sectionTitle}>Common Issues</Text>
           </View>
 
-          <View style={[styles.troubleshootItem, { backgroundColor: colors.surface }]}>
-            <Ionicons name="alert-circle" size={24} color={Colors.warning} />
-            <View style={styles.troubleshootContent}>
-              <Text style={styles.troubleshootTitle}>No notification showing</Text>
-              <Text style={styles.troubleshootText}>
-                • Check notification permissions are enabled{'\n'}
-                • The notification is required for foreground service
-              </Text>
+          {[
+            {
+              icon: 'close-circle',
+              title: 'App closes after 5-10 minutes',
+              solutions: [
+                'Complete ALL manual steps above',
+                'Disable Adaptive Battery in settings',
+                'Ensure location is "Allow all the time"',
+                'Check manufacturer-specific settings',
+              ],
+            },
+            {
+              icon: 'notifications-off',
+              title: 'No notification showing',
+              solutions: [
+                'Enable notification permissions',
+                'Notification is required for tracking',
+                'Check Do Not Disturb settings',
+              ],
+            },
+            {
+              icon: 'location',
+              title: 'GPS not accurate',
+              solutions: [
+                'Go outdoors with clear sky view',
+                'Wait 30-60 seconds for GPS lock',
+                'Enable "High accuracy" location mode',
+                'Restart device if issues persist',
+              ],
+            },
+          ].map((issue, index) => (
+            <View key={index} style={[styles.troubleshootCard, { backgroundColor: colors.surface }]}>
+              <View style={styles.troubleshootHeader}>
+                <View style={[styles.troubleshootIconContainer, { backgroundColor: Colors.error + '15' }]}>
+                  <Ionicons name={issue.icon as any} size={24} color={Colors.error} />
+                </View>
+                <Text style={styles.troubleshootTitle}>{issue.title}</Text>
+              </View>
+              <View style={styles.troubleshootSolutions}>
+                {issue.solutions.map((solution, idx) => (
+                  <View key={idx} style={styles.solutionRow}>
+                    <Ionicons name="checkmark" size={16} color={Colors.success} />
+                    <Text style={styles.solutionText}>{solution}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
-          </View>
-
-          <View style={[styles.troubleshootItem, { backgroundColor: colors.surface }]}>
-            <Ionicons name="alert-circle" size={24} color={Colors.warning} />
-            <View style={styles.troubleshootContent}>
-              <Text style={styles.troubleshootTitle}>GPS not accurate</Text>
-              <Text style={styles.troubleshootText}>
-                • Make sure you're outdoors with clear sky view{'\n'}
-                • Wait 30-60 seconds for GPS to lock{'\n'}
-                • Check "High accuracy" location mode is enabled
-              </Text>
-            </View>
-          </View>
+          ))}
         </View>
 
         {/* Technical Details */}
@@ -323,11 +510,13 @@ const styles = StyleSheet.create({
   header: {
     height: 60,
     paddingHorizontal: Spacing.lg,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.surface,
     borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    ...Shadows.small,
   },
   backButton: {
     padding: 8,
@@ -339,86 +528,140 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  introSection: {
-    padding: 24,
+  heroSection: {
+    padding: Spacing.xxxl,
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: Spacing.lg,
   },
-  introTitle: {
-    fontSize: 20,
-    fontFamily: 'Poppins_600SemiBold',
-    color: Colors.primary,
-    marginTop: 12,
-    marginBottom: 8,
-    textAlign: 'center',
+  heroIconContainer: {
+    marginBottom: Spacing.lg,
   },
-  introText: {
-    fontSize: 14,
-    fontFamily: 'Poppins_400Regular',
+  heroIconGradient: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Shadows.medium,
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontFamily: 'Poppins_700Bold',
     color: Colors.textPrimary,
+    marginBottom: Spacing.sm,
     textAlign: 'center',
-    lineHeight: 22,
+  },
+  heroSubtitle: {
+    fontSize: 15,
+    fontFamily: 'Poppins_400Regular',
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    paddingHorizontal: Spacing.md,
   },
   section: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.xxxl,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 20,
+    fontFamily: 'Poppins_700Bold',
     color: Colors.textPrimary,
-    marginBottom: 8,
+    flex: 1,
   },
   sectionDescription: {
     fontSize: 14,
     fontFamily: 'Poppins_400Regular',
     color: Colors.textSecondary,
-    marginBottom: 16,
-    lineHeight: 20,
+    marginBottom: Spacing.lg,
+    lineHeight: 22,
   },
-  autoFeature: {
+  featuresContainer: {
+    gap: Spacing.md,
+  },
+  featuresRow: {
     flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  featureCard: {
+    flex: 1,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.large,
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
+    justifyContent: 'flex-start',
+    minHeight: 140,
+    ...Shadows.small,
   },
-  autoFeatureText: {
-    fontSize: 14,
-    fontFamily: 'Poppins_400Regular',
-    color: Colors.textPrimary,
-    marginLeft: 12,
+  featureCardPlaceholder: {
+    flex: 1,
   },
-  stepContainer: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  stepHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  stepNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  featureIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  featureTitle: {
+    fontSize: 13,
+    fontFamily: 'Poppins_600SemiBold',
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: Spacing.xs,
+  },
+  featureDescription: {
+    fontSize: 11,
+    fontFamily: 'Poppins_400Regular',
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  stepContainer: {
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.large,
+    marginBottom: Spacing.md,
+    ...Shadows.small,
+  },
+  stepContent: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  stepNumberContainer: {
+    alignItems: 'center',
+  },
+  stepNumber: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Shadows.small,
   },
   stepNumberText: {
-    fontSize: 14,
-    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 18,
+    fontFamily: 'Poppins_700Bold',
     color: '#fff',
   },
-  stepIcon: {
-    marginLeft: 12,
+  stepTextContainer: {
+    flex: 1,
+  },
+  stepTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
   stepTitle: {
     fontSize: 16,
     fontFamily: 'Poppins_600SemiBold',
     color: Colors.textPrimary,
-    marginLeft: 8,
     flex: 1,
   },
   stepDescription: {
@@ -426,60 +669,166 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins_400Regular',
     color: Colors.textSecondary,
     lineHeight: 20,
-    marginLeft: 40,
+  },
+  manualStepCard: {
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.large,
+    marginBottom: Spacing.lg,
+    ...Shadows.small,
+  },
+  manualStepHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+    gap: Spacing.md,
+  },
+  manualStepNumber: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Shadows.small,
+  },
+  manualStepNumberText: {
+    fontSize: 20,
+    fontFamily: 'Poppins_700Bold',
+    color: '#fff',
+  },
+  manualStepTitleContainer: {
+    flex: 1,
+  },
+  manualStepTitle: {
+    fontSize: 16,
+    fontFamily: 'Poppins_600SemiBold',
+    color: Colors.textPrimary,
+    marginBottom: 2,
+  },
+  manualStepSubtitle: {
+    fontSize: 12,
+    fontFamily: 'Poppins_400Regular',
+    color: Colors.textSecondary,
+  },
+  manualStepContent: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+  },
+  pathStep: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.background,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.small,
+  },
+  pathText: {
+    fontSize: 11,
+    fontFamily: 'Poppins_500Medium',
+    color: Colors.textPrimary,
+  },
+  pathArrow: {
+    marginHorizontal: -4,
+  },
+  actionBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.medium,
+    borderWidth: 1.5,
+  },
+  actionText: {
+    fontSize: 13,
+    fontFamily: 'Poppins_600SemiBold',
+    color: Colors.textPrimary,
+    flex: 1,
   },
   settingsButton: {
+    marginTop: Spacing.lg,
+    borderRadius: BorderRadius.large,
+    overflow: 'hidden',
+    ...Shadows.medium,
+  },
+  settingsButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 16,
+    padding: Spacing.lg,
+    gap: Spacing.sm,
   },
   settingsButtonText: {
     fontSize: 16,
     fontFamily: 'Poppins_600SemiBold',
     color: '#fff',
-    marginLeft: 8,
+    flex: 1,
+    textAlign: 'center',
   },
   manufacturerContainer: {
-    borderRadius: 12,
-    marginBottom: 12,
+    borderRadius: BorderRadius.large,
+    marginBottom: Spacing.md,
     overflow: 'hidden',
+    ...Shadows.small,
   },
   manufacturerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
+    padding: Spacing.lg,
+    gap: Spacing.md,
   },
-  manufacturerTitleRow: {
-    flexDirection: 'row',
+  manufacturerIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.primary + '15',
+    justifyContent: 'center',
     alignItems: 'center',
-    flex: 1,
   },
   manufacturerTitle: {
     fontSize: 16,
     fontFamily: 'Poppins_600SemiBold',
     color: Colors.textPrimary,
-    marginLeft: 12,
+    flex: 1,
+  },
+  chevronContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    transform: [{ rotate: '0deg' }],
+  },
+  chevronExpanded: {
+    transform: [{ rotate: '180deg' }],
   },
   manufacturerSteps: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.lg,
+    gap: Spacing.md,
   },
   manufacturerStep: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    gap: Spacing.md,
   },
-  bulletPoint: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+  stepBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: Colors.primary,
-    marginTop: 7,
-    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  stepBadgeText: {
+    fontSize: 12,
+    fontFamily: 'Poppins_600SemiBold',
+    color: '#fff',
   },
   manufacturerStepText: {
     fontSize: 13,
@@ -488,70 +837,106 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     flex: 1,
   },
+  verificationContainer: {
+    gap: Spacing.md,
+  },
   verificationStep: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.large,
+    gap: Spacing.md,
+    ...Shadows.small,
+  },
+  verificationIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  verificationContent: {
+    flex: 1,
   },
   verificationNumber: {
-    fontSize: 16,
+    fontSize: 12,
     fontFamily: 'Poppins_600SemiBold',
-    color: Colors.primary,
-    marginRight: 12,
-    width: 24,
+    color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 2,
   },
   verificationText: {
     fontSize: 14,
-    fontFamily: 'Poppins_400Regular',
+    fontFamily: 'Poppins_500Medium',
     color: Colors.textPrimary,
-    flex: 1,
+    lineHeight: 20,
   },
-  troubleshootItem: {
+  troubleshootCard: {
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.large,
+    marginBottom: Spacing.md,
+    ...Shadows.small,
+  },
+  troubleshootHeader: {
     flexDirection: 'row',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+    gap: Spacing.md,
   },
-  troubleshootContent: {
-    flex: 1,
-    marginLeft: 12,
+  troubleshootIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   troubleshootTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: 'Poppins_600SemiBold',
     color: Colors.textPrimary,
-    marginBottom: 4,
+    flex: 1,
   },
-  troubleshootText: {
+  troubleshootSolutions: {
+    gap: Spacing.sm,
+  },
+  solutionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+  },
+  solutionText: {
     fontSize: 13,
     fontFamily: 'Poppins_400Regular',
     color: Colors.textSecondary,
     lineHeight: 20,
+    flex: 1,
   },
   technicalSection: {
-    padding: 20,
-    borderRadius: 12,
-    marginHorizontal: 20,
-    marginBottom: 24,
+    padding: Spacing.xl,
+    borderRadius: BorderRadius.large,
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.xxxl,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
   },
   technicalTitle: {
     fontSize: 16,
     fontFamily: 'Poppins_600SemiBold',
-    color: Colors.textSecondary,
-    marginTop: 8,
-    marginBottom: 8,
+    color: Colors.textPrimary,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.sm,
   },
   technicalText: {
     fontSize: 13,
     fontFamily: 'Poppins_400Regular',
     color: Colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 22,
   },
   bottomSpacer: {
-    height: 40,
+    height: Spacing.xxxl,
   },
 });

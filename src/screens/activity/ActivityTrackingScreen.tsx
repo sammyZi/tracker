@@ -19,6 +19,7 @@ import NotificationService from '../../services/notification';
 import AudioAnnouncementService from '../../services/audio';
 import HapticFeedbackService from '../../services/haptic';
 import { useConfirmModal } from '../../hooks/useConfirmModal';
+import { useSettings } from '../../context';
 import { formatDuration, formatDistance, formatPace } from '../../utils';
 import { Colors } from '../../constants/theme';
 import { ActivityType } from '../../types';
@@ -31,6 +32,7 @@ interface ActivityTrackingScreenProps {
 
 export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ onBack }) => {
   const { modalState, showConfirm, hideModal } = useConfirmModal();
+  const { settings } = useSettings();
   const [activityType, setActivityType] = useState<ActivityType>('walking');
   const [isTracking, setIsTracking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -44,6 +46,15 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
   const [pausedTime, setPausedTime] = useState<number>(0);
   const [lastPauseTime, setLastPauseTime] = useState<number>(0);
   const timerIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Update services when settings change
+  useEffect(() => {
+    AudioAnnouncementService.updateSettings({
+      enabled: settings.audioAnnouncements,
+      interval: settings.announcementInterval,
+      units: settings.units,
+    });
+  }, [settings.audioAnnouncements, settings.announcementInterval, settings.units]);
 
   useEffect(() => {
     initializeServices();
@@ -125,15 +136,15 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
   const initializeServices = async () => {
     await NotificationService.initialize();
 
-    // Initialize audio announcements with default settings
+    // Initialize audio announcements with settings from context
     AudioAnnouncementService.initialize({
-      enabled: true,
-      interval: 1000, // 1km
-      units: 'metric',
+      enabled: settings.audioAnnouncements,
+      interval: settings.announcementInterval,
+      units: settings.units,
     });
 
-    // Initialize haptic feedback
-    HapticFeedbackService.initialize(true);
+    // Initialize haptic feedback with settings from context
+    HapticFeedbackService.initialize(settings.hapticFeedback ?? true);
 
     // Subscribe to location updates
     locationService.onLocationUpdate((location) => {
@@ -423,6 +434,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
       {/* Map */}
       <View style={styles.mapContainer}>
         <LiveRouteMap
+          key={settings.mapType}
           currentLocation={currentLocation}
           routePoints={routePoints}
           isTracking={isTracking && !isPaused}
@@ -466,7 +478,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
 
           <View style={styles.metricCard}>
             <Ionicons name="navigate-outline" size={18} color={Colors.primary} />
-            <Text style={styles.metricValue}>{formatDistance(distance)}</Text>
+            <Text style={styles.metricValue}>{formatDistance(distance, settings.units)}</Text>
             <Text style={styles.metricLabel}>Distance</Text>
           </View>
         </View>
@@ -474,7 +486,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
         <View style={styles.metricsRow}>
           <View style={styles.metricCard}>
             <Ionicons name="speedometer-outline" size={18} color={Colors.primary} />
-            <Text style={styles.metricValue}>{formatPace(currentPace)}</Text>
+            <Text style={styles.metricValue}>{formatPace(currentPace, settings.units)}</Text>
             <Text style={styles.metricLabel}>Pace</Text>
           </View>
 

@@ -17,7 +17,7 @@ interface ActivityCardProps {
   units?: UnitSystem;
 }
 
-export const ActivityCard: React.FC<ActivityCardProps> = ({
+const ActivityCardComponent: React.FC<ActivityCardProps> = ({
   activity,
   onPress,
   units = 'metric',
@@ -162,6 +162,13 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
     </TouchableOpacity>
   );
 };
+
+export const ActivityCard = React.memo(ActivityCardComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.activity.id === nextProps.activity.id &&
+    prevProps.units === nextProps.units
+  );
+});
 
 const styles = StyleSheet.create({
   card: {
