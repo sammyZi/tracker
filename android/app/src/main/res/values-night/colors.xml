@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App theme colors for dark mode -->
+    <color name="colorPrimary">#66BB6A</color>
+    <color name="colorPrimaryDark">#4CAF50</color>
+    <color name="colorAccent">#FF7043</color>
+    
+    <!-- Notification icon color -->
+    <color name="notification_icon_color">#66BB6A</color>
+    
+    <!-- Splash screen colors -->
+    <color name="splashscreen_background">#121212</color>
+    
+    <!-- Status bar color -->
+    <color name="statusBarColor">#1B1B1B</color>
+</resources>
