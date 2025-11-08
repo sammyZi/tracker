@@ -24,9 +24,25 @@ const STORAGE_KEYS = {
   ACTIVITIES: '@activities',
   GOALS: '@goals',
   ACTIVITY_PREFIX: '@activity_',
+  INSTALL_ID: '@install_id',
+  APP_VERSION: '@app_version',
 } as const;
 
 class StorageService {
+  // ==================== App Initialization ====================
+
+  /**
+   * Initialize storage
+   * Call this on app startup
+   */
+  async initialize(): Promise<void> {
+    try {
+      console.log('Storage initialized successfully');
+    } catch (error) {
+      console.error('Error initializing storage:', error);
+    }
+  }
+
   // ==================== Activities ====================
 
   /**
@@ -108,14 +124,16 @@ class StorageService {
    */
   async deleteActivity(activityId: string): Promise<void> {
     try {
-      // Remove individual activity
+      // Remove individual activity file
       const activityKey = `${STORAGE_KEYS.ACTIVITY_PREFIX}${activityId}`;
       await AsyncStorage.removeItem(activityKey);
 
-      // Update activities list
+      // Update activities list - remove from the list completely
       const activities = await this.getActivities();
       const filteredActivities = activities.filter(a => a.id !== activityId);
       await AsyncStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(filteredActivities));
+      
+      console.log(`Activity ${activityId} permanently deleted`);
     } catch (error) {
       console.error('Error deleting activity:', error);
       throw new Error('Failed to delete activity');
@@ -450,15 +468,15 @@ class StorageService {
    */
   async clearAllData(): Promise<void> {
     try {
-      await AsyncStorage.multiRemove([
-        STORAGE_KEYS.USER_PROFILE,
-        STORAGE_KEYS.USER_SETTINGS,
-        STORAGE_KEYS.ACTIVITIES,
-        STORAGE_KEYS.GOALS,
-      ]);
-
-      // Clear individual activity caches
-      await this.clearAllActivities();
+      // Get all app-related keys
+      const allKeys = await AsyncStorage.getAllKeys();
+      const appKeys = allKeys.filter(key => key.startsWith('@'));
+      
+      if (appKeys.length > 0) {
+        await AsyncStorage.multiRemove(appKeys);
+      }
+      
+      console.log('All data cleared');
     } catch (error) {
       console.error('Error clearing all data:', error);
       throw new Error('Failed to clear all data');

@@ -31,7 +31,6 @@ const HistoryStackNavigator = () => {
       screenOptions={{
         headerShown: false,
         gestureEnabled: true,
-        animationEnabled: false,
       }}
     >
       <HistoryStack.Screen 
@@ -80,7 +79,6 @@ const AppNavigatorComponent: React.FC = () => {
           },
           headerShown: false,
           lazy: true,
-          unmountOnBlur: false,
         }}
       >
         <Tab.Screen

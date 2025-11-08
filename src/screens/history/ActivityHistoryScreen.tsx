@@ -60,6 +60,9 @@ const ActivityHistoryScreenComponent: React.FC<ActivityHistoryScreenProps> = ({ 
   // Silent refresh when coming back after delete (no loading indicator)
   useFocusEffect(
     useCallback(() => {
+      // Reset navigation guard when screen comes into focus
+      isNavigatingRef.current = false;
+      
       if (route?.params?.refresh) {
         console.log('Refresh param detected, silently refreshing list');
         // Use silent refresh to avoid flickering
@@ -73,15 +76,23 @@ const ActivityHistoryScreenComponent: React.FC<ActivityHistoryScreenProps> = ({ 
   const isNavigatingRef = React.useRef(false);
 
   const handleActivityPress = React.useCallback((activity: Activity) => {
-    if (isNavigatingRef.current) return; // Prevent double tap
+    if (isNavigatingRef.current) {
+      console.log('Navigation blocked - already navigating');
+      return; // Prevent double tap
+    }
 
+    console.log('Navigating to activity:', activity.id);
     isNavigatingRef.current = true;
-    navigation.navigate('ActivityDetail', { activityId: activity.id });
+    
+    // Use requestAnimationFrame for smoother navigation
+    requestAnimationFrame(() => {
+      navigation.navigate('ActivityDetail', { activityId: activity.id });
+    });
 
-    // Reset after navigation
+    // Reset after a shorter timeout since useFocusEffect will also reset it
     setTimeout(() => {
       isNavigatingRef.current = false;
-    }, 1000);
+    }, 300);
   }, [navigation]);
 
   const renderActivityCard = React.useCallback(
@@ -283,11 +294,12 @@ const ActivityHistoryScreenComponent: React.FC<ActivityHistoryScreenProps> = ({ 
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         showsVerticalScrollIndicator={false}
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={5}
-        updateCellsBatchingPeriod={100}
-        initialNumToRender={8}
-        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={10}
+        windowSize={10}
+        disableIntervalMomentum={true}
       />
       {renderFilterModal()}
     </View>

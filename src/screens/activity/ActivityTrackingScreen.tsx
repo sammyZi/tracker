@@ -39,6 +39,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
   const [duration, setDuration] = useState(0);
   const [distance, setDistance] = useState(0);
   const [currentPace, setCurrentPace] = useState(0);
+  const [averagePace, setAveragePace] = useState(0);
   const [steps, setSteps] = useState(0);
   const [currentLocation, setCurrentLocation] = useState<any>(null);
   const [routePoints, setRoutePoints] = useState<any[]>([]);
@@ -224,6 +225,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
       // Don't update duration from metrics - use local timer
       setDistance(metrics.distance);
       setCurrentPace(metrics.currentPace);
+      setAveragePace(metrics.averagePace);
       setSteps(metrics.steps);
 
       // Check for distance milestones and announce
@@ -398,6 +400,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
     setDuration(0);
     setDistance(0);
     setCurrentPace(0);
+    setAveragePace(0);
     setSteps(0);
     setRoutePoints([]);
     setActivityStartTime(0);
@@ -486,7 +489,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
         <View style={styles.metricsRow}>
           <View style={styles.metricCard}>
             <Ionicons name="speedometer-outline" size={18} color={Colors.primary} />
-            <Text style={styles.metricValue}>{formatPace(currentPace, settings.units)}</Text>
+            <Text style={styles.metricValue}>{formatPace(averagePace, settings.units)}</Text>
             <Text style={styles.metricLabel}>Pace</Text>
           </View>
 

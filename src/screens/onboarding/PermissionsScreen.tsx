@@ -10,6 +10,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
+  PermissionsAndroid,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -53,9 +54,19 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
       // Check motion permission (pedometer)
       let motionStatus: 'granted' | 'denied' | 'pending' = 'pending';
       try {
-        const available = await Pedometer.isAvailableAsync();
-        motionStatus = available ? 'granted' : 'denied';
-      } catch {
+        if (Platform.OS === 'android' && Platform.Version >= 29) {
+          // Android 10+ requires ACTIVITY_RECOGNITION permission
+          const granted = await PermissionsAndroid.check(
+            PermissionsAndroid.PERMISSIONS.ACTIVITY_RECOGNITION
+          );
+          motionStatus = granted ? 'granted' : 'pending';
+        } else {
+          // iOS or older Android - just check if pedometer is available
+          const available = await Pedometer.isAvailableAsync();
+          motionStatus = available ? 'granted' : 'denied';
+        }
+      } catch (error) {
+        console.log('Error checking motion permission:', error);
         motionStatus = 'denied';
       }
 
@@ -107,13 +118,32 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
         backgroundLocation: backgroundStatus === 'granted' ? 'granted' : 'denied',
       }));
 
-      // 3. Check motion permission (automatically granted when accessing pedometer)
+      // 3. Request motion/activity recognition permission
       try {
-        const available = await Pedometer.isAvailableAsync();
-        setPermissions(prev => ({
-          ...prev,
-          motion: available ? 'granted' : 'denied',
-        }));
+        if (Platform.OS === 'android' && Platform.Version >= 29) {
+          // Android 10+ requires ACTIVITY_RECOGNITION permission
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.ACTIVITY_RECOGNITION,
+            {
+              title: 'Activity Recognition Permission',
+              message: 'This app needs access to your physical activity to count steps.',
+              buttonPositive: 'OK',
+              buttonNegative: 'Cancel',
+            }
+          );
+          
+          setPermissions(prev => ({
+            ...prev,
+            motion: granted === PermissionsAndroid.RESULTS.GRANTED ? 'granted' : 'denied',
+          }));
+        } else {
+          // iOS or older Android - check if pedometer is available
+          const available = await Pedometer.isAvailableAsync();
+          setPermissions(prev => ({
+            ...prev,
+            motion: available ? 'granted' : 'denied',
+          }));
+        }
       } catch (error) {
         console.log('Motion sensor not available:', error);
         setPermissions(prev => ({

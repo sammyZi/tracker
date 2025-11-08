@@ -35,3 +35,4 @@ app.json
 
 # typescript
 *.tsbuildinfo
+app.json

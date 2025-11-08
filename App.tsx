@@ -8,6 +8,7 @@ import { Text } from './src/components';
 import { AppNavigator } from './src/navigation';
 import { SettingsProvider } from './src/context';
 import { PermissionsScreen } from './src/screens/onboarding/PermissionsScreen';
+import storageService from './src/services/storage/StorageService';
 
 function AppContent() {
   const { fontsLoaded, error } = useFonts();
@@ -20,6 +21,21 @@ function AppContent() {
   } = usePermissions();
   
   const [showPermissions, setShowPermissions] = useState(false);
+  const [storageInitialized, setStorageInitialized] = useState(false);
+
+  // Initialize storage on app launch
+  React.useEffect(() => {
+    const initStorage = async () => {
+      try {
+        await storageService.initialize();
+        setStorageInitialized(true);
+      } catch (error) {
+        console.error('Failed to initialize storage:', error);
+        setStorageInitialized(true); // Continue anyway
+      }
+    };
+    initStorage();
+  }, []);
 
   React.useEffect(() => {
     if (!permissionsLoading && !hasRequestedPermissions) {
@@ -27,7 +43,7 @@ function AppContent() {
     }
   }, [permissionsLoading, hasRequestedPermissions]);
 
-  if (!fontsLoaded || permissionsLoading) {
+  if (!fontsLoaded || permissionsLoading || !storageInitialized) {
     return (
       <SafeAreaView style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />

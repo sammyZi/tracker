@@ -202,11 +202,11 @@ class StepCounterService {
       return;
     }
 
-    // watchStepCount gives us incremental steps since we started watching
-    // Add them to our current count
-    this.currentSteps += newSteps;
+    // watchStepCount gives us the total steps since we started watching
+    // So we use it directly as our current count
+    this.currentSteps = newSteps;
 
-    console.log(`Step update: +${newSteps}, Total: ${this.currentSteps}`);
+    console.log(`Step update: Total: ${this.currentSteps}`);
 
     // Notify all subscribers
     this.notifySubscribers(this.currentSteps);
