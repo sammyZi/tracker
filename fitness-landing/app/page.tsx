@@ -1,3 +1,5 @@
+'use client'
+
 import {
   Activity,
   Target,
@@ -8,8 +10,33 @@ import {
   CheckCircle
 } from 'lucide-react'
 import Image from 'next/image'
+import { useEffect, useState } from 'react'
 
 export default function Home() {
+  const [activeSection, setActiveSection] = useState('home')
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = ['home', 'features', 'download', 'contact']
+      const scrollPosition = window.scrollY + 200
+
+      for (const sectionId of sections) {
+        const element = document.getElementById(sectionId)
+        if (element) {
+          const { offsetTop, offsetHeight } = element
+          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+            setActiveSection(sectionId)
+            break
+          }
+        }
+      }
+    }
+
+    handleScroll() // Call once on mount
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   return (
     <div className="min-h-screen">
       {/* Floating Navigation */}
@@ -20,11 +47,51 @@ export default function Home() {
               <Activity className="h-6 w-6 text-blue-600" />
               <span className="text-lg font-bold text-gray-900">FitTracker</span>
             </div>
-            <div className="hidden md:flex space-x-6">
-              <a href="#home" className="text-gray-900 hover:text-blue-600 transition-colors text-sm font-semibold scroll-smooth">Home</a>
-              <a href="#features" className="text-gray-900 hover:text-blue-600 transition-colors text-sm font-semibold scroll-smooth">Features</a>
-              <a href="#download" className="text-gray-900 hover:text-blue-600 transition-colors text-sm font-semibold scroll-smooth">Download</a>
-              <a href="#contact" className="text-gray-900 hover:text-blue-600 transition-colors text-sm font-semibold scroll-smooth">Contact</a>
+            <div className="hidden md:flex space-x-6 relative">
+              <button
+                onClick={() => {
+                  document.getElementById('home')?.scrollIntoView({ behavior: 'smooth' })
+                }}
+                className={`text-sm font-semibold transition-colors duration-500 ease-in-out relative ${activeSection === 'home'
+                  ? 'text-blue-600'
+                  : 'text-gray-900 hover:text-blue-600'
+                  }`}
+              >
+                Home
+              </button>
+              <button
+                onClick={() => {
+                  document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })
+                }}
+                className={`text-sm font-semibold transition-colors duration-500 ease-in-out relative ${activeSection === 'features'
+                  ? 'text-blue-600'
+                  : 'text-gray-900 hover:text-blue-600'
+                  }`}
+              >
+                Features
+              </button>
+              <button
+                onClick={() => {
+                  document.getElementById('download')?.scrollIntoView({ behavior: 'smooth' })
+                }}
+                className={`text-sm font-semibold transition-colors duration-500 ease-in-out relative ${activeSection === 'download'
+                  ? 'text-blue-600'
+                  : 'text-gray-900 hover:text-blue-600'
+                  }`}
+              >
+                Download
+              </button>
+              <button
+                onClick={() => {
+                  document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })
+                }}
+                className={`text-sm font-semibold transition-colors duration-500 ease-in-out relative ${activeSection === 'contact'
+                  ? 'text-blue-600'
+                  : 'text-gray-900 hover:text-blue-600'
+                  }`}
+              >
+                Contact
+              </button>
             </div>
           </div>
         </div>
@@ -336,7 +403,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
+      <footer id="contact" className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-2 mb-4 md:mb-0">
