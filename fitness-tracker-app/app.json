@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Fitness Tracker",
-    "slug": "fitness-tracker-app",
+    "name": "FitTracker",
+    "slug": "fittracker-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -36,9 +36,7 @@
         "FOREGROUND_SERVICE_LOCATION"
       ],
       "config": {
-        "googleMaps": {
-
-        }
+        "googleMaps": {}
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
