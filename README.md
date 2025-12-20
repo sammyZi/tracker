@@ -14,32 +14,50 @@ A Next.js marketing website for the FitTracker app.
 
 ## Fitness Tracker App
 
-### Screenshots
+### 📸 Screenshots
 
-#### Activity Tracking
-<img src="fitness-landing/public/app_ss/activity.jpeg" width="140" height="300" />
-
-Start walking or running activities with real-time tracking. View live stats including distance, duration, pace, and calories burned.
-
-#### History
-<img src="fitness-landing/public/app_ss/history.jpeg" width="140" height="300" />
-
-Browse all your past activities with detailed summaries. View route maps and performance metrics for each workout.
-
-#### Goals
-<img src="fitness-landing/public/app_ss/goals.jpeg" width="140" height="300" />
-
-Set daily and weekly fitness goals. Track your progress with visual indicators and celebrate achievements.
-
-#### Profile
-<img src="fitness-landing/public/app_ss/profile.jpeg" width="140" height="300" />
-
-View your personal stats, total distance covered, and activity streaks. Manage your profile information.
-
-#### Settings
-<img src="fitness-landing/public/app_ss/settings.jpeg" width="140" height="300" />
-
-Customize app preferences including units, notifications, and data export options.
+<table>
+  <tr>
+    <td align="center">
+      <img src="fitness-landing/public/app_ss/activity.jpeg" width="180" height="390" alt="Activity Tracking" />
+      <br />
+      <b>🏃 Activity Tracking</b>
+      <br />
+      <sub>Real-time stats: distance, pace, calories</sub>
+    </td>
+    <td align="center">
+      <img src="fitness-landing/public/app_ss/history.jpeg" width="180" height="390" alt="History" />
+      <br />
+      <b>📋 History</b>
+      <br />
+      <sub>Browse past activities & route maps</sub>
+    </td>
+    <td align="center">
+      <img src="fitness-landing/public/app_ss/goals.jpeg" width="180" height="390" alt="Goals" />
+      <br />
+      <b>🎯 Goals</b>
+      <br />
+      <sub>Set & track daily/weekly targets</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="fitness-landing/public/app_ss/profile.jpeg" width="180" height="390" alt="Profile" />
+      <br />
+      <b>👤 Profile</b>
+      <br />
+      <sub>View stats & activity streaks</sub>
+    </td>
+    <td align="center">
+      <img src="fitness-landing/public/app_ss/settings.jpeg" width="180" height="390" alt="Settings" />
+      <br />
+      <b>⚙️ Settings</b>
+      <br />
+      <sub>Customize preferences & export data</sub>
+    </td>
+    <td></td>
+  </tr>
+</table>
 
 ### Features
 
