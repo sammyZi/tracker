@@ -420,3 +420,33 @@ html {
 .navbar-animated-border {
   border: 2px solid rgba(59, 130, 246, 0.3);
 }
+
+/* Enhanced particle styles for light hero */
+.particle {
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.6), rgba(59, 130, 246, 0.6));
+  box-shadow: 0 0 6px rgba(147, 51, 234, 0.4);
+}
+
+/* Smooth scroll snap for mobile */
+@media (max-width: 640px) {
+  .particle {
+    width: 3px;
+    height: 3px;
+  }
+}
+
+/* Phone mockup glow animation */
+@keyframes phone-glow {
+  0%, 100% {
+    opacity: 0.4;
+    filter: blur(20px);
+  }
+  50% {
+    opacity: 0.6;
+    filter: blur(25px);
+  }
+}
+
+.animate-phone-glow {
+  animation: phone-glow 4s ease-in-out infinite;
+}
