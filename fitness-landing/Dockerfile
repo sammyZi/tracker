@@ -1,19 +1,30 @@
-# Multi-stage Dockerfile for Next.js static export
-FROM node:20-alpine AS deps
+# Build stage
+FROM node:18-alpine AS builder
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci --silent
 
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Copy package files
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Copy source files
 COPY . .
+
+# Build the Next.js app (static export)
 RUN npm run build
 
-FROM node:20-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-EXPOSE 3000
-RUN npm install -g serve
-COPY --from=builder /app/out ./out
-CMD ["serve", "-s", "out", "-l", "3000"]
+# Production stage with nginx
+FROM nginx:alpine
+WORKDIR /usr/share/nginx/html
+
+# Remove default nginx static assets
+RUN rm -rf ./*
+
+# Copy built static files from builder
+COPY --from=builder /app/out .
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
