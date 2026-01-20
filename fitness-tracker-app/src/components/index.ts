@@ -17,5 +17,8 @@ export { ActivitySummaryCard } from './activity/ActivitySummaryCard';
 // Stats components
 export { StatCard, PersonalRecordsCard } from './stats';
 
+// Settings components
+export { BatteryOptimizationCard } from './settings/BatteryOptimizationCard';
+
 // Chart components
 export { DistanceChart, PaceChart } from './charts';

@@ -14,6 +14,7 @@ export { default as AudioAnnouncementService } from './audio';
 export { default as HapticFeedbackService } from './haptic';
 export { default as PersonalRecordsService } from './personalRecords';
 export { default as SharingService } from './sharing/SharingService';
+export { default as BatteryOptimizationService } from './battery/BatteryOptimizationService';
 
 // Services will be exported here as they are created
 // export { FirebaseService } from './firebase/FirebaseService';

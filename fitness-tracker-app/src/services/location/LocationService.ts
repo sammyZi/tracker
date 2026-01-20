@@ -21,6 +21,7 @@ import {
   clearBackgroundLocationCallback,
   resetBackgroundState,
 } from './BackgroundLocationTask';
+import batteryOptimizationService from '../battery/BatteryOptimizationService';
 
 export type LocationUpdateCallback = (location: Location) => void;
 
@@ -185,6 +186,9 @@ class LocationService {
    * Start background location tracking
    */
   private async startBackgroundTracking(): Promise<void> {
+    // Request battery optimization exemption before starting background tracking
+    await batteryOptimizationService.ensureBatteryExemption('tracking');
+
     // Set up callback for background location updates
     setBackgroundLocationCallback((location: Location) => {
       // Process location through the same pipeline

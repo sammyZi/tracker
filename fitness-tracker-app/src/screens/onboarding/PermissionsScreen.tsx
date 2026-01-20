@@ -19,6 +19,7 @@ import { Pedometer } from 'expo-sensors';
 import { Text, Button, ConfirmModal } from '../../components/common';
 import { useConfirmModal } from '../../hooks/useConfirmModal';
 import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import BatteryOptimizationService from '../../services/battery/BatteryOptimizationService';
 
 interface PermissionsScreenProps {
   onComplete: () => void;
@@ -154,6 +155,16 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
 
       // Check if all critical permissions granted
       if (locationStatus === 'granted') {
+        // Request battery optimization exemption on Android before completing
+        if (Platform.OS === 'android' && backgroundStatus === 'granted') {
+          try {
+            // Skip cooldown during onboarding to ensure user sees the prompt
+            await BatteryOptimizationService.ensureBatteryExemption('tracking', true);
+          } catch (error) {
+            console.log('Battery optimization request error:', error);
+          }
+        }
+        
         // Location is critical, others are optional
         setTimeout(onComplete, 500);
       }
