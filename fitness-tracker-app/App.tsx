@@ -9,6 +9,11 @@ import { AppNavigator } from './src/navigation';
 import { SettingsProvider } from './src/context';
 import { PermissionsScreen } from './src/screens/onboarding/PermissionsScreen';
 import storageService from './src/services/storage/StorageService';
+import { configurePerformance } from './src/utils/performance';
+
+// Initialize performance optimizations for 120 FPS
+configurePerformance();
+
 
 function AppContent() {
   const { fontsLoaded, error } = useFonts();
@@ -19,7 +24,7 @@ function AppContent() {
     loading: permissionsLoading,
     markPermissionsRequested,
   } = usePermissions();
-  
+
   const [showPermissions, setShowPermissions] = useState(false);
   const [storageInitialized, setStorageInitialized] = useState(false);
 
