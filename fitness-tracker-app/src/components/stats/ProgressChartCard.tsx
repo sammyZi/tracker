@@ -4,6 +4,7 @@ import { LineChart } from 'react-native-chart-kit';
 import { Card } from '../common/Card';
 import { Text } from '../common/Text';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 import { Activity, UnitSystem } from '../../types';
 import { formatDistanceValue } from '../../utils/formatting';
 
@@ -15,9 +16,11 @@ interface ProgressChartCardProps {
 type ChartType = 'distance' | 'duration' | 'pace';
 
 const screenWidth = Dimensions.get('window').width;
-const cardPadding = Spacing.lg * 2;
+// Total horizontal insets: scrollContent padding (16×2) + card padding (12×2)
+const horizontalInsets = (Spacing.lg + Spacing.md) * 2; // 56
 
 export const ProgressChartCard: React.FC<ProgressChartCardProps> = ({ activities, units }) => {
+  const { colors } = useTheme();
   const [chartType, setChartType] = useState<ChartType>('distance');
 
   const chartData = useMemo(() => {
@@ -82,54 +85,54 @@ export const ProgressChartCard: React.FC<ProgressChartCardProps> = ({ activities
   }, [activities, chartType, units]);
 
   const chartConfig = {
-    backgroundGradientFrom: Colors.surface,
-    backgroundGradientTo: Colors.surface,
-    color: (opacity = 1) => `rgba(67, 97, 238, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(136, 136, 136, ${opacity})`,
+    backgroundGradientFrom: colors.surface,
+    backgroundGradientTo: colors.surface,
+    color: (opacity = 1) => `rgba(108, 99, 255, ${opacity})`,
+    labelColor: () => colors.textSecondary,
     strokeWidth: 3,
     barPercentage: 0.5,
     useShadowColorFromDataset: false,
     propsForDots: {
       r: "4",
       strokeWidth: "2",
-      stroke: Colors.primary
+      stroke: colors.primary
     },
     decimalPlaces: chartType === 'duration' ? 0 : 1,
   };
 
   return (
-    <Card variant="outlined" style={styles.card}>
+    <Card variant="outlined" style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       <View style={styles.header}>
-        <Text variant="mediumLarge" weight="semiBold" color={Colors.textPrimary}>
+        <Text variant="mediumLarge" weight="semiBold" color={colors.textPrimary}>
           Activity Progress
         </Text>
       </View>
 
-      <View style={styles.tabs}>
+      <View style={[styles.tabs, { backgroundColor: colors.background }]}>
         <TouchableOpacity 
-          style={[styles.tab, chartType === 'distance' && styles.activeTab]}
+          style={[styles.tab, chartType === 'distance' && [styles.activeTab, { backgroundColor: colors.primary }]]}
           onPress={() => setChartType('distance')}
         >
-          <Text variant="small" weight={chartType === 'distance' ? 'semiBold' : 'regular'} color={chartType === 'distance' ? Colors.surface : Colors.textSecondary}>Distance</Text>
+          <Text variant="small" weight={chartType === 'distance' ? 'semiBold' : 'regular'} color={chartType === 'distance' ? '#fff' : colors.textSecondary}>Distance</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.tab, chartType === 'duration' && styles.activeTab]}
+          style={[styles.tab, chartType === 'duration' && [styles.activeTab, { backgroundColor: colors.primary }]]}
           onPress={() => setChartType('duration')}
         >
-           <Text variant="small" weight={chartType === 'duration' ? 'semiBold' : 'regular'} color={chartType === 'duration' ? Colors.surface : Colors.textSecondary}>Time</Text>
+           <Text variant="small" weight={chartType === 'duration' ? 'semiBold' : 'regular'} color={chartType === 'duration' ? '#fff' : colors.textSecondary}>Time</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.tab, chartType === 'pace' && styles.activeTab]}
+          style={[styles.tab, chartType === 'pace' && [styles.activeTab, { backgroundColor: colors.primary }]]}
           onPress={() => setChartType('pace')}
         >
-           <Text variant="small" weight={chartType === 'pace' ? 'semiBold' : 'regular'} color={chartType === 'pace' ? Colors.surface : Colors.textSecondary}>Pace</Text>
+           <Text variant="small" weight={chartType === 'pace' ? 'semiBold' : 'regular'} color={chartType === 'pace' ? '#fff' : colors.textSecondary}>Pace</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.chartWrapper}>
         <LineChart
           data={chartData}
-          width={screenWidth - cardPadding - Spacing.md * 2}
+          width={screenWidth - horizontalInsets}
           height={220}
           chartConfig={chartConfig}
           bezier
@@ -143,7 +146,6 @@ export const ProgressChartCard: React.FC<ProgressChartCardProps> = ({ activities
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: Spacing.lg,
     marginBottom: Spacing.xl,
     padding: Spacing.md,
   },
@@ -153,7 +155,6 @@ const styles = StyleSheet.create({
   },
   tabs: {
     flexDirection: 'row',
-    backgroundColor: Colors.background,
     borderRadius: BorderRadius.medium,
     padding: 4,
     marginBottom: Spacing.lg,
@@ -164,14 +165,13 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: BorderRadius.medium,
   },
-  activeTab: {
-    backgroundColor: Colors.primary,
-  },
+  activeTab: {},
   chartWrapper: {
     alignItems: 'center',
-    marginLeft: -Spacing.md, // offset internal chartkit padding 
+    overflow: 'hidden',
   },
   chart: {
     borderRadius: BorderRadius.medium,
+    marginLeft: -Spacing.lg, // offset internal chartkit left padding
   }
 });
