@@ -4,7 +4,7 @@
  * Premium flat editorial design — no shadows, no cards, no gradients
  */
 
-import React, { useState, useRef, useLayoutEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -14,6 +14,7 @@ import {
   ScrollView,
   StatusBar,
   Platform,
+  InteractionManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { captureRef } from 'react-native-view-shot';
@@ -56,6 +57,7 @@ export const ActivityDetailScreen: React.FC<any> = ({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
 
   const activityCardRef = useRef<View>(null);
   const shareCardRef = useRef<View>(null);
@@ -66,11 +68,11 @@ export const ActivityDetailScreen: React.FC<any> = ({
     isSharing,
   } = useActivitySharing();
 
-  // Load data immediately on mount
-  useLayoutEffect(() => {
+  // Load data after navigation animation completes to prevent lag
+  useEffect(() => {
     let mounted = true;
 
-    const loadData = async () => {
+    const task = InteractionManager.runAfterInteractions(async () => {
       try {
         const [loadedActivity, settings] = await Promise.all([
           StorageService.getActivity(activityId),
@@ -83,6 +85,8 @@ export const ActivityDetailScreen: React.FC<any> = ({
             setUnits(settings.units);
           }
           setIsReady(true);
+          // Defer map rendering to avoid jank
+          setTimeout(() => mounted && setMapReady(true), 300);
         }
       } catch (error) {
         console.error('Error loading activity:', error);
@@ -90,12 +94,11 @@ export const ActivityDetailScreen: React.FC<any> = ({
           setIsReady(true);
         }
       }
-    };
-
-    loadData();
+    });
 
     return () => {
       mounted = false;
+      task.cancel();
     };
   }, [activityId]);
 
@@ -405,7 +408,7 @@ export const ActivityDetailScreen: React.FC<any> = ({
               </TouchableOpacity>
             </View>
             <View style={styles.mapContainer}>
-              {activity.route && activity.route.length > 0 && (
+              {mapReady && activity.route && activity.route.length > 0 ? (
                 <StaticRouteMap
                   route={activity.route}
                   units={units}
@@ -413,6 +416,11 @@ export const ActivityDetailScreen: React.FC<any> = ({
                   showPaceHeatmap={showPaceHeatmap}
                   averagePace={activity.averagePace}
                 />
+              ) : (
+                <View style={styles.mapPlaceholder}>
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                  <Text variant="extraSmall" color={Colors.textSecondary} style={{ marginTop: 8 }}>Loading map...</Text>
+                </View>
               )}
             </View>
 
@@ -749,6 +757,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: Colors.background,
+  },
+  mapPlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   mapMeta: {
     flexDirection: 'row',
