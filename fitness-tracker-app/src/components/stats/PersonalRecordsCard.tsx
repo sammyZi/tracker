@@ -1,13 +1,13 @@
 /**
  * PersonalRecordsCard Component
  * Displays personal records with trophy icons and badges
+ * Flat editorial style — no card wrapper
  */
 
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Card } from '../common/Card';
 import { Text } from '../common/Text';
 import { PersonalRecords, UnitSystem } from '../../types';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
@@ -55,11 +55,9 @@ const RecordItem: React.FC<RecordItemProps> = ({
           {label}
         </Text>
         {showBadge && (
-          <View style={styles.recordBadge}>
-            <Text variant="extraSmall" weight="semiBold" color={badgeColor}>
-              RECORD
-            </Text>
-          </View>
+          <Text variant="extraSmall" weight="semiBold" color={badgeColor}>
+            RECORD
+          </Text>
         )}
       </View>
       <Text variant="medium" weight="semiBold" style={styles.recordValue}>
@@ -89,44 +87,30 @@ export const PersonalRecordsCard: React.FC<PersonalRecordsCardProps> = ({
 
   if (!hasRecords) {
     return (
-      <Card variant="outlined">
+      <View>
         <View style={styles.header}>
-          <View style={styles.headerIconContainer}>
-            <Ionicons name="trophy" size={24} color={Colors.warning} />
-          </View>
-          <Text variant="mediumLarge" weight="semiBold" style={styles.title}>
-            Personal Records
+          <View style={[styles.dot, { backgroundColor: Colors.warning }]} />
+          <Text variant="extraSmall" weight="semiBold" color={Colors.warning} style={styles.sectionLabel}>
+            PERSONAL RECORDS
           </Text>
         </View>
         <View style={styles.emptyContainer}>
-          <View style={styles.emptyIconContainer}>
-            <Ionicons name="medal-outline" size={48} color={Colors.border} />
-          </View>
-          <Text variant="medium" color={Colors.textSecondary} align="center" style={styles.empty}>
+          <Ionicons name="medal-outline" size={36} color={Colors.border} />
+          <Text variant="small" color={Colors.textSecondary} align="center" style={{ marginTop: Spacing.sm }}>
             Complete activities to set your first records!
           </Text>
-          <Text variant="small" color={Colors.textSecondary} align="center" style={styles.emptySubtext}>
-            Track your longest distance, fastest pace, longest duration, and most steps
-          </Text>
         </View>
-      </Card>
+      </View>
     );
   }
 
   return (
-    <Card variant="outlined">
+    <View>
       <View style={styles.header}>
-        <View style={styles.headerIconContainer}>
-          <Ionicons name="trophy" size={24} color={Colors.warning} />
-        </View>
-        <View style={styles.headerContent}>
-          <Text variant="mediumLarge" weight="semiBold" style={styles.title}>
-            Personal Records
-          </Text>
-          <Text variant="small" color={Colors.textSecondary}>
-            Your best achievements
-          </Text>
-        </View>
+        <View style={[styles.dot, { backgroundColor: Colors.warning }]} />
+        <Text variant="extraSmall" weight="semiBold" color={Colors.warning} style={styles.sectionLabel}>
+          PERSONAL RECORDS
+        </Text>
       </View>
 
       <View style={styles.recordsContainer}>
@@ -184,12 +168,12 @@ export const PersonalRecordsCard: React.FC<PersonalRecordsCardProps> = ({
       </View>
 
       <View style={styles.footer}>
-        <Ionicons name="information-circle-outline" size={16} color={Colors.textSecondary} />
-        <Text variant="small" color={Colors.textSecondary} style={styles.footerText}>
-          Records are automatically updated when you complete activities
+        <Ionicons name="information-circle-outline" size={14} color={Colors.textSecondary} />
+        <Text variant="extraSmall" color={Colors.textSecondary} style={styles.footerText}>
+          Records update automatically after activities
         </Text>
       </View>
-    </Card>
+    </View>
   );
 };
 
@@ -199,46 +183,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.lg,
   },
-  headerIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: `${Colors.warning}15`,
-    alignItems: 'center',
-    justifyContent: 'center',
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 8,
   },
-  headerContent: {
-    marginLeft: Spacing.md,
-    flex: 1,
-  },
-  title: {
-    marginLeft: Spacing.md,
+  sectionLabel: {
+    letterSpacing: 1,
+    textTransform: 'uppercase' as const,
   },
   recordsContainer: {
-    gap: Spacing.lg,
+    gap: Spacing.sm,
   },
   recordItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: Spacing.md,
-    backgroundColor: Colors.background,
-    borderRadius: BorderRadius.medium,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.border,
   },
   recordIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
   badge: {
     position: 'absolute',
-    top: -4,
-    right: -4,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    top: -3,
+    right: -3,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
@@ -253,45 +232,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  recordBadge: {
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.small,
-    backgroundColor: Colors.background,
-  },
   recordValue: {
-    marginTop: Spacing.xs,
+    marginTop: 2,
   },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: Spacing.lg,
-    paddingTop: Spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    paddingTop: Spacing.md,
   },
   footerText: {
-    marginLeft: Spacing.xs,
+    marginLeft: 6,
     flex: 1,
   },
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: Spacing.xl,
-  },
-  emptyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: Colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.lg,
-  },
-  empty: {
-    paddingVertical: Spacing.md,
-  },
-  emptySubtext: {
-    paddingHorizontal: Spacing.lg,
-    lineHeight: 20,
   },
 });

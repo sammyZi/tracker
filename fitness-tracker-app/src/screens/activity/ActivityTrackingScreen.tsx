@@ -502,9 +502,10 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
         />
       </View>
 
-      {/* Top Bar with Status */}
-      <SafeAreaView style={styles.topBar} edges={['top']}>
-        <View style={styles.topBarContent}>
+      {/* ── Unified Top Overlay ────────────────────────────────── */}
+      <SafeAreaView style={styles.topOverlay} edges={['top']} pointerEvents="box-none">
+        {/* Status row */}
+        <View style={styles.statusRow} pointerEvents="box-none">
           {!isTracking && onBack && (
             <TouchableOpacity
               style={styles.backButton}
@@ -522,92 +523,87 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
           )}
           {isPaused && (
             <View style={[styles.statusBadge, styles.pausedBadge]}>
+              <Ionicons name="pause" size={14} color="#fff" style={{ marginRight: 4 }} />
               <Text style={styles.statusText}>Paused</Text>
             </View>
           )}
         </View>
-      </SafeAreaView>
 
-      {/* Compact Metrics Overlay */}
-      <SafeAreaView style={styles.metricsContainer} edges={['top']}>
-        {/* Row 1: Time | Distance | Steps */}
-        <View style={styles.metricsRow}>
-          <View style={styles.metricCard}>
-            <View style={styles.metricInner}>
-              <Ionicons name="time-outline" size={16} color={Colors.primary} />
-              <Text style={styles.metricValue}>{formatDuration(duration)}</Text>
-            </View>
-            <Text style={styles.metricLabel}>Time</Text>
+        {/* Hero: Duration | Distance */}
+        <View style={styles.heroRow}>
+          <View style={styles.heroMetric}>
+            <Text style={styles.heroValue}>{formatDuration(duration)}</Text>
+            <Text style={styles.heroLabel}>Duration</Text>
           </View>
-          <View style={styles.metricCard}>
-            <View style={styles.metricInner}>
-              <Ionicons name="navigate-outline" size={16} color={Colors.primary} />
-              <Text style={styles.metricValue}>{formatDistance(distance, settings.units)}</Text>
-            </View>
-            <Text style={styles.metricLabel}>Distance</Text>
-          </View>
-          <View style={styles.metricCard}>
-            <View style={styles.metricInner}>
-              <Ionicons name="footsteps-outline" size={16} color={Colors.primary} />
-              <Text style={styles.metricValue}>{steps.toLocaleString()}</Text>
-            </View>
-            <Text style={styles.metricLabel}>Steps</Text>
+          <View style={styles.heroDivider} />
+          <View style={styles.heroMetric}>
+            <Text style={styles.heroValue}>{formatDistance(distance, settings.units)}</Text>
+            <Text style={styles.heroLabel}>Distance</Text>
           </View>
         </View>
 
-        {/* Row 2: Current Pace | Avg Pace | Calories */}
-        <View style={styles.metricsRow}>
-          <View style={[styles.metricCard, styles.paceCard, { borderLeftColor: currentPaceColor }]}>
-            <View style={styles.metricInner}>
-              <Ionicons name="flash" size={16} color={currentPaceColor} />
+        {/* Secondary stats */}
+        <View style={styles.statsStrip}>
+          <View style={styles.stripItem}>
+            <View style={styles.stripIconRow}>
+              <Ionicons name="flash" size={14} color={currentPaceColor} />
               {isTracking && !isPaused && (
                 <Animated.View style={[styles.liveDot, { opacity: pulseAnim, backgroundColor: currentPaceColor }]} />
               )}
-              <Text style={[styles.metricValue, { color: currentPaceColor }]}>
-                {currentPace > 0 ? formatPace(currentPace, settings.units).split(' ')[0] : '--:--'}
-              </Text>
             </View>
-            <Text style={styles.metricLabel}>Current</Text>
+            <Text style={[styles.stripValue, { color: currentPaceColor }]}>
+              {currentPace > 0 ? formatPace(currentPace, settings.units).split(' ')[0] : '--:--'}
+            </Text>
+            <Text style={styles.stripLabel}>Pace</Text>
           </View>
-          <View style={[styles.metricCard, styles.avgPaceCard]}>
-            <View style={styles.metricInner}>
-              <Ionicons name="speedometer" size={16} color={Colors.primary} />
-              <Text style={styles.metricValue}>
-                {averagePace > 0 ? formatPace(averagePace, settings.units).split(' ')[0] : '--:--'}
-              </Text>
-            </View>
-            <Text style={styles.metricLabel}>Avg Pace</Text>
+
+          <View style={styles.stripDivider} />
+
+          <View style={styles.stripItem}>
+            <Ionicons name="speedometer-outline" size={14} color={Colors.primary} />
+            <Text style={styles.stripValue}>
+              {averagePace > 0 ? formatPace(averagePace, settings.units).split(' ')[0] : '--:--'}
+            </Text>
+            <Text style={styles.stripLabel}>Avg Pace</Text>
           </View>
-          <View style={styles.metricCard}>
-            <View style={styles.metricInner}>
-              <Ionicons name="flame" size={16} color="#FF6B6B" />
-              <Text style={styles.metricValue}>{Math.round(calories)}</Text>
-            </View>
-            <Text style={styles.metricLabel}>Calories</Text>
+
+          <View style={styles.stripDivider} />
+
+          <View style={styles.stripItem}>
+            <Ionicons name="footsteps-outline" size={14} color={Colors.primary} />
+            <Text style={styles.stripValue}>{steps.toLocaleString()}</Text>
+            <Text style={styles.stripLabel}>Steps</Text>
+          </View>
+
+          <View style={styles.stripDivider} />
+
+          <View style={styles.stripItem}>
+            <Ionicons name="flame-outline" size={14} color="#FF6B6B" />
+            <Text style={styles.stripValue}>{Math.round(calories)}</Text>
+            <Text style={styles.stripLabel}>Cal</Text>
           </View>
         </View>
       </SafeAreaView>
 
-      {/* Bottom Controls */}
+      {/* ── Bottom Controls ────────────────────────────────────── */}
       <SafeAreaView style={styles.bottomContainer} edges={['bottom']}>
         {!isTracking ? (
           <View style={styles.startContainer}>
-            {/* Start Button */}
-            <TouchableOpacity style={styles.startButton} onPress={handleStart}>
-              <Ionicons name="play" size={32} color="#fff" />
+            <TouchableOpacity style={styles.startButton} onPress={handleStart} activeOpacity={0.85}>
+              <Ionicons name="play" size={26} color="#fff" />
               <Text style={styles.startButtonText}>Start Activity</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.controlsRow}>
-            {/* Pause/Resume Button */}
             <TouchableOpacity
               style={[styles.controlButton, styles.pauseButton]}
               onPress={isPaused ? handleResume : handlePause}
+              activeOpacity={0.85}
             >
               <Ionicons
                 name={isPaused ? 'play' : 'pause'}
-                size={24}
+                size={22}
                 color="#fff"
               />
               <Text style={styles.controlButtonText}>
@@ -615,12 +611,12 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
               </Text>
             </TouchableOpacity>
 
-            {/* Stop Button */}
             <TouchableOpacity
               style={[styles.controlButton, styles.stopButton]}
               onPress={handleStop}
+              activeOpacity={0.85}
             >
-              <Ionicons name="stop" size={24} color="#fff" />
+              <Ionicons name="stop" size={22} color="#fff" />
               <Text style={styles.controlButtonText}>Stop</Text>
             </TouchableOpacity>
           </View>
@@ -650,22 +646,24 @@ const styles = StyleSheet.create({
       Platform.OS === 'android'
         ? (StatusBar.currentHeight || 20)
         : 0,
-
   },
   mapContainer: {
     flex: 1,
   },
-  topBar: {
+
+  // ── Unified top overlay ──────────────────────────────────────────────────
+  topOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-  },
-  topBarContent: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 8,
+  },
+  statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 10,
   },
   backButton: {
     width: 40,
@@ -676,22 +674,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
     elevation: 4,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.success,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: 20,
-    alignSelf: 'flex-start',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
     elevation: 4,
   },
   pausedBadge: {
@@ -709,81 +706,110 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Poppins_600SemiBold',
   },
-  metricsContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 12,
-    right: 12,
-    paddingTop: 60,
-  },
-  metricsRow: {
+
+  // ── Hero metrics ────────────────────────────────────────────────────────
+  heroRow: {
     flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    alignItems: 'center',
     marginBottom: 8,
-    gap: 8,
-  },
-  metricCard: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.90)',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 64,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 5,
   },
-  metricInner: {
+  heroMetric: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  heroValue: {
+    fontSize: 26,
+    fontFamily: 'Poppins_700Bold',
+    color: Colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+  heroLabel: {
+    fontSize: 10,
+    fontFamily: 'Poppins_500Medium',
+    color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginTop: 2,
+  },
+  heroDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+  },
+
+  // ── Secondary stats strip ───────────────────────────────────────────────
+  statsStrip: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  stripItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 1,
+  },
+  stripIconRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    marginBottom: 2,
+    gap: 3,
   },
-  metricValue: {
-    fontSize: 16,
+  stripValue: {
+    fontSize: 14,
     fontFamily: 'Poppins_700Bold',
     color: Colors.textPrimary,
     letterSpacing: -0.3,
   },
-  metricLabel: {
-    fontSize: 10,
+  stripLabel: {
+    fontSize: 9,
     fontFamily: 'Poppins_500Medium',
     color: Colors.textSecondary,
-    marginTop: 2,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  paceCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-  },
-  avgPaceCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.90)',
+  stripDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(0,0,0,0.08)',
   },
   liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#00D9A3',
-    marginLeft: 2,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
   },
+
+  // ── Bottom controls ─────────────────────────────────────────────────────
   bottomContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.98)',
-    paddingHorizontal: 24,
-    paddingVertical: 24,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.96)',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
     elevation: 8,
   },
   startContainer: {
@@ -792,17 +818,25 @@ const styles = StyleSheet.create({
   startButton: {
     backgroundColor: Colors.primary,
     width: '100%',
-    height: 64,
-    borderRadius: 32,
+    height: 60,
+    borderRadius: 30,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
     shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
     elevation: 8,
+  },
+  startIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   startButtonText: {
     color: '#fff',
@@ -813,12 +847,12 @@ const styles = StyleSheet.create({
   },
   controlsRow: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 12,
   },
   controlButton: {
     flex: 1,
-    height: 64,
-    borderRadius: 32,
+    height: 56,
+    borderRadius: 28,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -832,7 +866,7 @@ const styles = StyleSheet.create({
   },
   controlButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'Poppins_700Bold',
     letterSpacing: 0.5,
     textTransform: 'uppercase',

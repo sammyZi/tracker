@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { Card } from '../common/Card';
 import { Text } from '../common/Text';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 import { useTheme } from '../../hooks';
@@ -16,8 +15,8 @@ interface ProgressChartCardProps {
 type ChartType = 'distance' | 'duration' | 'pace';
 
 const screenWidth = Dimensions.get('window').width;
-// Total horizontal insets: scrollContent padding (16×2) + card padding (12×2)
-const horizontalInsets = (Spacing.lg + Spacing.md) * 2; // 56
+// Total horizontal insets: scrollContent padding (16×2) + section padding
+const horizontalInsets = Spacing.lg * 2 + Spacing.md;
 
 export const ProgressChartCard: React.FC<ProgressChartCardProps> = ({ activities, units }) => {
   const { colors } = useTheme();
@@ -71,6 +70,10 @@ export const ProgressChartCard: React.FC<ProgressChartCardProps> = ({ activities
       dataSets = recent.map(() => 0);
     }
 
+    // Create a floor ~30% below the minimum so the chart has breathing room
+    const minVal = Math.min(...dataSets.filter(v => v > 0));
+    const floor = hasData ? Math.max(0, Math.floor(minVal * 0.7)) : 0;
+
     return {
       labels,
       datasets: [
@@ -78,15 +81,22 @@ export const ProgressChartCard: React.FC<ProgressChartCardProps> = ({ activities
           data: dataSets,
           color: (opacity = 1) => `rgba(67, 97, 238, ${opacity})`,
           strokeWidth: 3,
-        }
+        },
+        {
+          // Invisible baseline to set Y-axis floor
+          data: dataSets.map(() => floor),
+          color: () => 'transparent',
+          strokeWidth: 0,
+          withDots: false,
+        },
       ],
       suffix
     };
   }, [activities, chartType, units]);
 
   const chartConfig = {
-    backgroundGradientFrom: colors.surface,
-    backgroundGradientTo: colors.surface,
+    backgroundGradientFrom: colors.background,
+    backgroundGradientTo: colors.background,
     color: (opacity = 1) => `rgba(108, 99, 255, ${opacity})`,
     labelColor: () => colors.textSecondary,
     strokeWidth: 3,
@@ -101,12 +111,10 @@ export const ProgressChartCard: React.FC<ProgressChartCardProps> = ({ activities
   };
 
   return (
-    <Card variant="outlined" style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <View style={styles.header}>
-        <Text variant="mediumLarge" weight="semiBold" color={colors.textPrimary}>
-          Activity Progress
-        </Text>
-      </View>
+    <View style={styles.section}>
+      <Text variant="extraSmall" weight="semiBold" color={colors.primary} style={styles.sectionLabel}>
+        ACTIVITY PROGRESS
+      </Text>
 
       <View style={[styles.tabs, { backgroundColor: colors.background }]}>
         <TouchableOpacity 
@@ -140,18 +148,19 @@ export const ProgressChartCard: React.FC<ProgressChartCardProps> = ({ activities
           yAxisSuffix={chartData.suffix}
         />
       </View>
-    </Card>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
+  section: {
     marginBottom: Spacing.xl,
-    padding: Spacing.md,
   },
-  header: {
+  sectionLabel: {
+    letterSpacing: 1,
+    textTransform: 'uppercase' as const,
     marginBottom: Spacing.md,
-    paddingHorizontal: Spacing.xs,
+    marginLeft: 4,
   },
   tabs: {
     flexDirection: 'row',
