@@ -1,7 +1,7 @@
 /**
  * ActivityDetailScreen
  * Displays complete activity information with route map, metrics, and actions
- * Performance optimized: deferred map rendering, memoized computations
+ * Premium flat editorial design — no shadows, no cards, no gradients
  */
 
 import React, { useState, useRef, useLayoutEffect, useMemo } from 'react';
@@ -28,9 +28,19 @@ import {
   formatDate,
   formatDateTime,
 } from '../../utils/formatting';
-import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 import StorageService from '../../services/storage/StorageService';
 import { useActivitySharing } from '../../hooks/useActivitySharing';
+
+// Activity type config for icons and accent colors
+const ACTIVITY_CONFIG: Record<string, { icon: string; color: string }> = {
+  running: { icon: 'fitness', color: Colors.success },
+  walking: { icon: 'walk', color: Colors.warning },
+  default: { icon: 'fitness', color: Colors.primary },
+};
+
+const getActivityConfig = (type: string) =>
+  ACTIVITY_CONFIG[type] || ACTIVITY_CONFIG.default;
 
 export const ActivityDetailScreen: React.FC<any> = ({
   route,
@@ -184,705 +194,625 @@ export const ActivityDetailScreen: React.FC<any> = ({
     },
   ];
 
-  // Show loading state while data is being fetched
+  // ── Shared header for loading/error states ──
+  const renderHeader = (showActions = false) => (
+    <View style={styles.header}>
+      <TouchableOpacity
+        style={styles.headerButton}
+        onPress={() => navigation.goBack()}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="arrow-back" size={22} color={Colors.textPrimary} />
+      </TouchableOpacity>
+      <Text variant="mediumLarge" weight="semiBold" color={Colors.textPrimary}>
+        Activity
+      </Text>
+      {showActions ? (
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.headerButton} onPress={handleShare} activeOpacity={0.7}>
+            <Ionicons name="share-outline" size={22} color={Colors.textPrimary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerButton} onPress={handleDelete} activeOpacity={0.7}>
+            <Ionicons name="trash-outline" size={22} color={Colors.error} />
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.headerButtonPlaceholder} />
+      )}
+    </View>
+  );
+
+  // Show loading state
   if (!isReady) {
     return (
-      <View style={styles.fullScreenContainer}>
-        <View style={styles.container}>
-          <View style={styles.statusBarSpacer} />
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.headerButton}
-              onPress={() => navigation.goBack()}
-            >
-              <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
-            </TouchableOpacity>
-            <Text variant="large" weight="bold" color={Colors.textPrimary}>
-              Activity Details
-            </Text>
-            <View style={styles.headerSpacer} />
-          </View>
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={Colors.primary} />
-          </View>
+      <View style={styles.screen}>
+        <View style={styles.statusBarSpacer} />
+        {renderHeader()}
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={Colors.primary} />
         </View>
       </View>
     );
   }
 
-  // Show error state if activity not found after loading
+  // Show error state
   if (!activity) {
     return (
-      <View style={styles.fullScreenContainer}>
-        <View style={styles.container}>
-          <View style={styles.statusBarSpacer} />
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.headerButton}
-              onPress={() => navigation.goBack()}
-            >
-              <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
-            </TouchableOpacity>
-            <Text variant="large" weight="bold" color={Colors.textPrimary}>
-              Activity Details
-            </Text>
-            <View style={styles.headerSpacer} />
+      <View style={styles.screen}>
+        <View style={styles.statusBarSpacer} />
+        {renderHeader()}
+        <View style={styles.centered}>
+          <View style={styles.emptyIcon}>
+            <Ionicons name="alert-circle-outline" size={44} color={Colors.disabled} />
           </View>
-          <View style={styles.loadingContainer}>
-            <Ionicons name="alert-circle-outline" size={48} color={Colors.textSecondary} />
-            <Text variant="regular" color={Colors.textSecondary} style={{ marginTop: Spacing.md }}>
-              Activity not found
-            </Text>
-          </View>
+          <Text variant="regular" weight="medium" color={Colors.textSecondary} style={{ marginTop: Spacing.md }}>
+            Activity not found
+          </Text>
         </View>
       </View>
     );
   }
 
-  return (
-    <View style={styles.fullScreenContainer}>
-      <View style={styles.container}>
-        <View style={styles.statusBarSpacer} />
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
-          </TouchableOpacity>
-          <Text variant="large" weight="bold" color={Colors.textPrimary}>
-            Activity Details
-          </Text>
-          <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.headerButton} onPress={handleShare}>
-              <Ionicons name="share-outline" size={24} color={Colors.textPrimary} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.headerButton} onPress={handleDelete}>
-              <Ionicons name="trash-outline" size={24} color={Colors.error} />
-            </TouchableOpacity>
-          </View>
-        </View>
+  const config = getActivityConfig(activity.type);
+  const distanceParts = formatDistance(activity.distance, units, 2).split(' ');
+  const paceParts = formatPace(activity.averagePace, units).split(' ');
 
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Capturable Activity Card */}
-          <View ref={activityCardRef} style={styles.capturableCard} collapsable={false}>
-            {/* Activity Type Header Card */}
-            <View style={styles.titleSection}>
-              <View style={styles.typeContainer}>
-                <View style={[styles.typeIcon, { backgroundColor: Colors.primary + '15' }]}>
-                  <Ionicons
-                    name="fitness"
-                    size={32}
-                    color={Colors.primary}
-                  />
-                </View>
-                <View style={styles.titleText}>
-                  <Text variant="large" weight="bold" color={Colors.textPrimary}>
-                    {activity.type.charAt(0).toUpperCase() + activity.type.slice(1)}
-                  </Text>
-                  <Text variant="small" color={Colors.textSecondary}>
-                    {formatDateTime(activity.startTime)}
-                  </Text>
-                </View>
+  return (
+    <View style={styles.screen}>
+      <View style={styles.statusBarSpacer} />
+      {renderHeader(true)}
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Capturable Activity Card */}
+        <View ref={activityCardRef} style={styles.capturable} collapsable={false}>
+
+          {/* ── Hero Section ── */}
+          <View style={styles.heroSection}>
+            <View style={styles.heroTop}>
+              <View style={[styles.activityBadge, { backgroundColor: config.color + '15' }]}>
+                <Ionicons name={config.icon as any} size={20} color={config.color} />
+                <Text variant="small" weight="semiBold" color={config.color} style={{ marginLeft: 6 }}>
+                  {activity.type.charAt(0).toUpperCase() + activity.type.slice(1)}
+                </Text>
               </View>
+              <Text variant="small" color={Colors.textSecondary}>
+                {formatDateTime(activity.startTime)}
+              </Text>
             </View>
 
-            {/* Main Metrics Grid */}
-            <View style={styles.metricsGrid}>
-              <View style={styles.metricCard}>
-                <View style={[styles.metricIconContainer, { backgroundColor: Colors.primary + '12' }]}>
-                  <Ionicons name="navigate" size={22} color={Colors.primary} />
-                </View>
-                <Text variant="large" weight="bold" color={Colors.textPrimary} style={styles.metricValue}>
-                  {formatDistance(activity.distance, units, 2).split(' ')[0]}
-                </Text>
-                <Text variant="extraSmall" color={Colors.textSecondary} style={styles.metricUnit}>
-                  {formatDistance(activity.distance, units, 2).split(' ')[1]}
-                </Text>
-                <Text variant="extraSmall" color={Colors.textSecondary} style={styles.metricLabel}>
-                  Distance
-                </Text>
-              </View>
+            {/* Big distance number */}
+            <View style={styles.heroMetric}>
+              <Text style={styles.heroValue}>{distanceParts[0]}</Text>
+              <Text variant="regular" weight="medium" color={Colors.textSecondary} style={{ marginLeft: 6, marginBottom: 10 }}>
+                {distanceParts[1]}
+              </Text>
+            </View>
 
-              <View style={styles.metricCard}>
-                <View style={[styles.metricIconContainer, { backgroundColor: Colors.success + '12' }]}>
-                  <Ionicons name="time" size={22} color={Colors.success} />
-                </View>
-                <Text variant="large" weight="bold" color={Colors.textPrimary} style={styles.metricValue}>
-                  {formatDuration(activity.duration)}
-                </Text>
-                <Text variant="extraSmall" color={Colors.textSecondary} style={styles.metricLabel}>
+            {/* Quick stats row */}
+            <View style={styles.heroStatsRow}>
+              <View style={styles.heroStat}>
+                <Text variant="extraSmall" color={Colors.textSecondary} style={styles.heroStatLabel}>
                   Duration
                 </Text>
-              </View>
-
-              <View style={styles.metricCard}>
-                <View style={[styles.metricIconContainer, { backgroundColor: Colors.info + '12' }]}>
-                  <Ionicons name="speedometer" size={22} color={Colors.info} />
-                </View>
-                <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary} style={styles.metricValue}>
-                  {formatPace(activity.averagePace, units).split(' ')[0]}
+                <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
+                  {formatDuration(activity.duration)}
                 </Text>
-                <Text variant="extraSmall" color={Colors.textSecondary} style={styles.metricLabel}>
+              </View>
+              <View style={styles.heroStatDivider} />
+              <View style={styles.heroStat}>
+                <Text variant="extraSmall" color={Colors.textSecondary} style={styles.heroStatLabel}>
                   Pace
                 </Text>
-              </View>
-
-              <View style={styles.metricCard}>
-                <View style={[styles.metricIconContainer, { backgroundColor: Colors.primary + '12' }]}>
-                  <Ionicons name="footsteps" size={22} color={Colors.primary} />
-                </View>
-                <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary} style={styles.metricValue}>
-                  {activity.steps.toLocaleString()}
-                </Text>
-                <Text variant="extraSmall" color={Colors.textSecondary} style={styles.metricLabel}>
-                  Steps
+                <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
+                  {paceParts[0]}
                 </Text>
               </View>
-
-              <View style={styles.metricCard}>
-                <View style={[styles.metricIconContainer, { backgroundColor: Colors.error + '12' }]}>
-                  <Ionicons name="flame" size={22} color={Colors.error} />
-                </View>
-                <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary} style={styles.metricValue}>
+              <View style={styles.heroStatDivider} />
+              <View style={styles.heroStat}>
+                <Text variant="extraSmall" color={Colors.textSecondary} style={styles.heroStatLabel}>
+                  Calories
+                </Text>
+                <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
                   {Math.round(activity.calories)}
                 </Text>
-                <Text variant="extraSmall" color={Colors.textSecondary} style={styles.metricLabel}>
-                  Calories
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.sectionDivider} />
+
+          {/* ── Key Metrics ── */}
+          <View style={styles.section}>
+            <Text variant="extraSmall" weight="semiBold" color={Colors.primary} style={styles.sectionLabel}>
+              KEY METRICS
+            </Text>
+            <View style={styles.metricsRow}>
+              <View style={styles.metricItem}>
+                <View style={[styles.metricDot, { backgroundColor: Colors.primary }]} />
+                <Text variant="extraSmall" color={Colors.textSecondary}>Steps</Text>
+                <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
+                  {activity.steps.toLocaleString()}
+                </Text>
+              </View>
+              {computedStats && (
+                <>
+                  <View style={styles.metricItem}>
+                    <View style={[styles.metricDot, { backgroundColor: Colors.success }]} />
+                    <Text variant="extraSmall" color={Colors.textSecondary}>Speed</Text>
+                    <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
+                      {computedStats.speed}
+                      <Text variant="extraSmall" color={Colors.textSecondary}>
+                        {' '}{units === 'metric' ? 'km/h' : 'mph'}
+                      </Text>
+                    </Text>
+                  </View>
+                  <View style={styles.metricItem}>
+                    <View style={[styles.metricDot, { backgroundColor: Colors.info }]} />
+                    <Text variant="extraSmall" color={Colors.textSecondary}>Cadence</Text>
+                    <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
+                      {computedStats.cadence}
+                      <Text variant="extraSmall" color={Colors.textSecondary}> spm</Text>
+                    </Text>
+                  </View>
+                  <View style={styles.metricItem}>
+                    <View style={[styles.metricDot, { backgroundColor: Colors.warning }]} />
+                    <Text variant="extraSmall" color={Colors.textSecondary}>Stride</Text>
+                    <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
+                      {computedStats.stride}
+                      <Text variant="extraSmall" color={Colors.textSecondary}> cm</Text>
+                    </Text>
+                  </View>
+                </>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.sectionDivider} />
+
+          {/* ── Route Map ── */}
+          <View style={styles.section}>
+            <View style={styles.mapHeaderRow}>
+              <View>
+                <Text variant="extraSmall" weight="semiBold" color={Colors.primary} style={styles.sectionLabel}>
+                  ROUTE
+                </Text>
+                <Text variant="extraSmall" color={Colors.textSecondary}>
+                  {activity.route.length} GPS points
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.paceToggle, showPaceHeatmap && styles.paceToggleActive]}
+                onPress={() => setShowPaceHeatmap(!showPaceHeatmap)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={showPaceHeatmap ? 'color-palette' : 'color-palette-outline'}
+                  size={16}
+                  color={showPaceHeatmap ? '#FFFFFF' : Colors.textSecondary}
+                />
+                <Text
+                  variant="extraSmall"
+                  weight="medium"
+                  color={showPaceHeatmap ? '#FFFFFF' : Colors.textSecondary}
+                  style={{ marginLeft: 4 }}
+                >
+                  Pace
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.mapContainer}>
+              {activity.route && activity.route.length > 0 && (
+                <StaticRouteMap
+                  route={activity.route}
+                  units={units}
+                  showDistanceMarkers={true}
+                  showPaceHeatmap={showPaceHeatmap}
+                  averagePace={activity.averagePace}
+                />
+              )}
+            </View>
+
+            {/* Map metadata */}
+            {computedStats && (
+              <View style={styles.mapMeta}>
+                <View style={styles.mapMetaItem}>
+                  <Ionicons name="locate-outline" size={14} color={Colors.success} />
+                  <Text variant="extraSmall" color={Colors.textSecondary} style={{ marginLeft: 4 }}>
+                    {computedStats.avgAccuracy}m accuracy
+                  </Text>
+                </View>
+                {activity.elevationGain !== undefined && activity.elevationGain > 0 && (
+                  <View style={styles.mapMetaItem}>
+                    <Ionicons name="arrow-up-outline" size={14} color={Colors.warning} />
+                    <Text variant="extraSmall" color={Colors.textSecondary} style={{ marginLeft: 4 }}>
+                      +{activity.elevationGain.toFixed(0)}m elevation
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+
+          <View style={styles.sectionDivider} />
+
+          {/* ── Details ── */}
+          <View style={styles.section}>
+            <Text variant="extraSmall" weight="semiBold" color={Colors.primary} style={styles.sectionLabel}>
+              DETAILS
+            </Text>
+
+            <View style={styles.detailRow}>
+              <Ionicons name="calendar-outline" size={18} color={Colors.primary} />
+              <View style={styles.detailContent}>
+                <Text variant="extraSmall" color={Colors.textSecondary}>Date</Text>
+                <Text variant="regular" weight="medium" color={Colors.textPrimary}>
+                  {formatDate(activity.startTime, 'long')}
                 </Text>
               </View>
             </View>
 
-            {/* Performance Insights */}
-            {computedStats && (
-              <View style={styles.insightsSection}>
-                <Text variant="mediumLarge" weight="semiBold" color={Colors.textPrimary} style={styles.sectionTitle}>
-                  Performance Insights
+            <View style={styles.detailDivider} />
+
+            <View style={styles.detailRow}>
+              <Ionicons name="time-outline" size={18} color={Colors.success} />
+              <View style={styles.detailContent}>
+                <Text variant="extraSmall" color={Colors.textSecondary}>Time Range</Text>
+                <Text variant="regular" weight="medium" color={Colors.textPrimary}>
+                  {formatDate(activity.startTime, 'time')} – {formatDate(activity.endTime, 'time')}
                 </Text>
-                <View style={styles.insightsGrid}>
-                  <View style={styles.insightCard}>
-                    <View style={styles.insightHeader}>
-                      <Ionicons name="trending-up" size={18} color={Colors.success} />
-                      <Text variant="small" weight="semiBold" color={Colors.textPrimary}>
-                        Speed
-                      </Text>
-                    </View>
-                    <Text variant="mediumLarge" weight="bold" color={Colors.success}>
-                      {computedStats.speed}
-                    </Text>
-                    <Text variant="extraSmall" color={Colors.textSecondary}>
-                      {units === 'metric' ? 'km/h' : 'mph'}
-                    </Text>
-                  </View>
-
-                  <View style={styles.insightCard}>
-                    <View style={styles.insightHeader}>
-                      <Ionicons name="footsteps" size={18} color={Colors.info} />
-                      <Text variant="small" weight="semiBold" color={Colors.textPrimary}>
-                        Cadence
-                      </Text>
-                    </View>
-                    <Text variant="mediumLarge" weight="bold" color={Colors.info}>
-                      {computedStats.cadence}
-                    </Text>
-                    <Text variant="extraSmall" color={Colors.textSecondary}>
-                      steps/min
-                    </Text>
-                  </View>
-
-                  <View style={styles.insightCard}>
-                    <View style={styles.insightHeader}>
-                      <Ionicons name="resize" size={18} color={Colors.warning} />
-                      <Text variant="small" weight="semiBold" color={Colors.textPrimary}>
-                        Stride
-                      </Text>
-                    </View>
-                    <Text variant="mediumLarge" weight="bold" color={Colors.warning}>
-                      {computedStats.stride}
-                    </Text>
-                    <Text variant="extraSmall" color={Colors.textSecondary}>
-                      cm/step
-                    </Text>
-                  </View>
-                </View>
               </View>
-            )}
+            </View>
 
-            {/* Route Map */}
-            <View style={styles.mapSection}>
-              <View style={styles.mapHeader}>
-                <View>
-                  <Text variant="mediumLarge" weight="semiBold" color={Colors.textPrimary}>
-                    Route Map
-                  </Text>
-                  <Text variant="extraSmall" color={Colors.textSecondary}>
-                    {activity.route.length} GPS points tracked
-                  </Text>
+            <View style={styles.detailDivider} />
+
+            <View style={styles.detailRow}>
+              <Ionicons name="location-outline" size={18} color={Colors.info} />
+              <View style={styles.detailContent}>
+                <Text variant="extraSmall" color={Colors.textSecondary}>GPS Tracking</Text>
+                <Text variant="regular" weight="medium" color={Colors.textPrimary}>
+                  {activity.route.length} points · {computedStats?.avgAccuracy}m avg
+                </Text>
+              </View>
+            </View>
+
+            {activity.elevationGain !== undefined && activity.elevationGain > 0 && (
+              <>
+                <View style={styles.detailDivider} />
+                <View style={styles.detailRow}>
+                  <Ionicons name="trending-up-outline" size={18} color={Colors.warning} />
+                  <View style={styles.detailContent}>
+                    <Text variant="extraSmall" color={Colors.textSecondary}>Elevation Gain</Text>
+                    <Text variant="regular" weight="medium" color={Colors.textPrimary}>
+                      {activity.elevationGain.toFixed(0)} meters
+                    </Text>
+                  </View>
                 </View>
+              </>
+            )}
+          </View>
+
+          {/* Branding Footer for Shared Image */}
+          <View style={styles.brandingFooter}>
+            <Ionicons name="fitness" size={16} color={Colors.primary} />
+            <Text variant="extraSmall" weight="medium" color={Colors.disabled} style={{ marginLeft: 6 }}>
+              Tracked with Stride
+            </Text>
+          </View>
+        </View>
+        {/* End Capturable Card */}
+      </ScrollView>
+
+      {/* Share Modal */}
+      <ShareModal
+        visible={showShareModal || generatingImage}
+        onClose={() => !generatingImage && setShowShareModal(false)}
+        title={generatingImage ? "Generating Image..." : "Share Activity"}
+        options={shareOptions}
+        loading={isSharing || generatingImage}
+        loadingMessage={generatingImage ? "Creating high-quality image with route map" : "Sharing..."}
+      />
+
+      {/* Off-screen Share Card for Image Generation */}
+      {renderShareCard && activity && (
+        <View style={styles.offscreenContainer}>
+          <View ref={shareCardRef} collapsable={false}>
+            <ActivityShareCard activity={activity} units={units} />
+          </View>
+        </View>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteModal}
+        transparent
+        animationType="fade"
+        onRequestClose={cancelDelete}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalIconWrap}>
+              <Ionicons name="trash" size={36} color={Colors.error} />
+            </View>
+
+            <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary} style={styles.modalTitle}>
+              Delete Activity
+            </Text>
+
+            <Text variant="regular" color={Colors.textSecondary} style={styles.modalMessage}>
+              Are you sure you want to delete this activity? This action cannot be undone.
+            </Text>
+
+            {isDeleting ? (
+              <View style={styles.modalLoading}>
+                <ActivityIndicator size="large" color={Colors.error} />
+                <Text variant="regular" color={Colors.textSecondary} style={{ marginTop: Spacing.md }}>
+                  Deleting...
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.modalActions}>
                 <TouchableOpacity
-                  style={[styles.heatmapToggle, showPaceHeatmap && styles.heatmapToggleActive]}
-                  onPress={() => setShowPaceHeatmap(!showPaceHeatmap)}
+                  style={[styles.modalBtn, styles.modalBtnCancel]}
+                  onPress={cancelDelete}
+                  activeOpacity={0.7}
                 >
-                  <Ionicons
-                    name={showPaceHeatmap ? 'color-palette' : 'color-palette-outline'}
-                    size={18}
-                    color={showPaceHeatmap ? '#FFFFFF' : Colors.textSecondary}
-                  />
-                  <Text
-                    variant="extraSmall"
-                    weight="medium"
-                    color={showPaceHeatmap ? '#FFFFFF' : Colors.textSecondary}
-                  >
-                    Pace
+                  <Text variant="regular" weight="semiBold" color={Colors.textPrimary}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.modalBtn, styles.modalBtnDelete]}
+                  onPress={confirmDelete}
+                  activeOpacity={0.7}
+                >
+                  <Text variant="regular" weight="semiBold" color="#FFFFFF">
+                    Delete
                   </Text>
                 </TouchableOpacity>
               </View>
-              <View style={styles.mapContainer}>
-                {activity.route && activity.route.length > 0 && (
-                  <StaticRouteMap
-                    route={activity.route}
-                    units={units}
-                    showDistanceMarkers={true}
-                    showPaceHeatmap={showPaceHeatmap}
-                    averagePace={activity.averagePace}
-                  />
-                )}
-              </View>
-
-              {/* Map Stats */}
-              {computedStats && (
-                <View style={styles.mapStats}>
-                  <View style={styles.mapStatItem}>
-                    <Ionicons name="analytics" size={16} color={Colors.success} />
-                    <Text variant="extraSmall" color={Colors.textSecondary}>
-                      Accuracy: {computedStats.avgAccuracy}m
-                    </Text>
-                  </View>
-                  {activity.elevationGain !== undefined && activity.elevationGain > 0 && (
-                    <View style={styles.mapStatItem}>
-                      <Ionicons name="trending-up" size={16} color={Colors.warning} />
-                      <Text variant="extraSmall" color={Colors.textSecondary}>
-                        Elevation: +{activity.elevationGain.toFixed(0)}m
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              )}
-            </View>
-
-            {/* Activity Details */}
-            <View style={styles.statsSection}>
-              <Text variant="mediumLarge" weight="semiBold" color={Colors.textPrimary} style={styles.sectionTitle}>
-                Activity Details
-              </Text>
-              <View style={styles.statsList}>
-                <View style={styles.statRow}>
-                  <View style={[styles.statIconWrapper, { backgroundColor: Colors.primary + '12' }]}>
-                    <Ionicons name="calendar" size={18} color={Colors.primary} />
-                  </View>
-                  <View style={styles.statContent}>
-                    <Text variant="extraSmall" color={Colors.textSecondary}>
-                      Date
-                    </Text>
-                    <Text variant="regular" weight="semiBold" color={Colors.textPrimary}>
-                      {formatDate(activity.startTime, 'long')}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.statRow}>
-                  <View style={[styles.statIconWrapper, { backgroundColor: Colors.success + '12' }]}>
-                    <Ionicons name="time-outline" size={18} color={Colors.success} />
-                  </View>
-                  <View style={styles.statContent}>
-                    <Text variant="extraSmall" color={Colors.textSecondary}>
-                      Time Range
-                    </Text>
-                    <Text variant="regular" weight="semiBold" color={Colors.textPrimary}>
-                      {formatDate(activity.startTime, 'time')} - {formatDate(activity.endTime, 'time')}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.statRow}>
-                  <View style={[styles.statIconWrapper, { backgroundColor: Colors.info + '12' }]}>
-                    <Ionicons name="location" size={18} color={Colors.info} />
-                  </View>
-                  <View style={styles.statContent}>
-                    <Text variant="extraSmall" color={Colors.textSecondary}>
-                      GPS Tracking
-                    </Text>
-                    <Text variant="regular" weight="semiBold" color={Colors.textPrimary}>
-                      {activity.route.length} points • {computedStats?.avgAccuracy}m accuracy
-                    </Text>
-                  </View>
-                </View>
-
-                {activity.elevationGain !== undefined && activity.elevationGain > 0 && (
-                  <View style={[styles.statRow, { borderBottomWidth: 0 }]}>
-                    <View style={[styles.statIconWrapper, { backgroundColor: Colors.warning + '12' }]}>
-                      <Ionicons name="trending-up" size={18} color={Colors.warning} />
-                    </View>
-                    <View style={styles.statContent}>
-                      <Text variant="extraSmall" color={Colors.textSecondary}>
-                        Elevation Gain
-                      </Text>
-                      <Text variant="regular" weight="semiBold" color={Colors.textPrimary}>
-                        {activity.elevationGain.toFixed(0)} meters
-                      </Text>
-                    </View>
-                  </View>
-                )}
-              </View>
-            </View>
-
-            {/* Branding Footer for Shared Image */}
-            <View style={styles.brandingFooter}>
-              <Ionicons name="fitness" size={20} color={Colors.primary} />
-              <Text variant="small" color={Colors.textSecondary} style={styles.brandingText}>
-                Tracked with Stride
-              </Text>
-            </View>
+            )}
           </View>
-          {/* End Capturable Card */}
-        </ScrollView>
-
-        {/* Share Modal */}
-        <ShareModal
-          visible={showShareModal || generatingImage}
-          onClose={() => !generatingImage && setShowShareModal(false)}
-          title={generatingImage ? "Generating Image..." : "Share Activity"}
-          options={shareOptions}
-          loading={isSharing || generatingImage}
-          loadingMessage={generatingImage ? "Creating high-quality image with route map" : "Sharing..."}
-        />
-
-        {/* Off-screen Share Card for Image Generation */}
-        {renderShareCard && activity && (
-          <View style={styles.offscreenContainer}>
-            <View ref={shareCardRef} collapsable={false}>
-              <ActivityShareCard activity={activity} units={units} />
-            </View>
-          </View>
-        )}
-
-        {/* Delete Confirmation Modal */}
-        <Modal
-          visible={showDeleteModal}
-          transparent
-          animationType="fade"
-          onRequestClose={cancelDelete}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalIconContainer}>
-                <Ionicons name="trash" size={48} color={Colors.error} />
-              </View>
-
-              <Text variant="large" weight="bold" color={Colors.textPrimary} style={styles.modalTitle}>
-                Delete Activity
-              </Text>
-
-              <Text variant="regular" color={Colors.textSecondary} style={styles.modalMessage}>
-                Are you sure you want to delete this activity? This action cannot be undone.
-              </Text>
-
-              {isDeleting ? (
-                <View style={styles.modalLoadingContainer}>
-                  <ActivityIndicator size="large" color={Colors.error} />
-                  <Text variant="regular" color={Colors.textSecondary} style={styles.modalLoadingText}>
-                    Deleting...
-                  </Text>
-                </View>
-              ) : (
-                <View style={styles.modalActions}>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.modalButtonCancel]}
-                    onPress={cancelDelete}
-                  >
-                    <Text variant="regular" weight="semiBold" color={Colors.textPrimary}>
-                      Cancel
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.modalButtonDelete]}
-                    onPress={confirmDelete}
-                  >
-                    <Text variant="regular" weight="semiBold" color="#FFFFFF">
-                      Delete
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          </View>
-        </Modal>
-      </View>
+        </View>
+      </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  fullScreenContainer: {
+  screen: {
     flex: 1,
     backgroundColor: Colors.surface,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 44,
   },
   statusBarSpacer: {
-    height: 0,
+    height: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 44,
   },
-  loadingContainer: {
+  centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  capturableCard: {
-    backgroundColor: Colors.surface,
+  emptyIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: Colors.border + '60',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+
+  // ── Header ──
   header: {
-    height: 56,
+    height: 52,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md,
-    backgroundColor: Colors.surface,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
+    paddingHorizontal: Spacing.lg,
   },
   headerButton: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 20,
+    borderRadius: 19,
+  },
+  headerButtonPlaceholder: {
+    width: 38,
   },
   headerActions: {
     flexDirection: 'row',
+    gap: 2,
   },
-  headerSpacer: {
-    width: 80,
-  },
+
+  // ── Scroll ──
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: Spacing.xxxl,
+    paddingBottom: 48,
   },
-  titleSection: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.lg,
+  capturable: {
     backgroundColor: Colors.surface,
   },
-  typeContainer: {
+
+  // ── Hero ──
+  heroSection: {
+    paddingHorizontal: 20,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xl,
+  },
+  heroTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.lg,
+  },
+  activityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  heroMetric: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    marginBottom: Spacing.xl,
+  },
+  heroValue: {
+    fontSize: 56,
+    fontFamily: 'Poppins_700Bold',
+    color: Colors.textPrimary,
+    lineHeight: 62,
+    includeFontPadding: false,
+  },
+  heroStatsRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  typeIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.md,
-  },
-  titleText: {
+  heroStat: {
     flex: 1,
-  },
-  metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.sm,
-    gap: Spacing.sm,
-  },
-  metricCard: {
-    width: '48%',
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: Spacing.md,
     alignItems: 'center',
-    minHeight: 110,
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
-  metricIconContainer: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.xs,
-  },
-  metricValue: {
-    marginTop: Spacing.xs,
+  heroStatLabel: {
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
     marginBottom: 2,
   },
-  metricUnit: {
-    marginTop: -2,
-    marginBottom: Spacing.xs,
+  heroStatDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: Colors.border,
   },
-  metricLabel: {
-    marginTop: Spacing.xs,
+
+  // ── Sections ──
+  section: {
+    paddingHorizontal: 20,
+    paddingVertical: Spacing.xl,
+  },
+  sectionLabel: {
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    opacity: 0.6,
+    letterSpacing: 1.2,
+    marginBottom: Spacing.lg,
   },
-  sectionTitle: {
-    marginBottom: Spacing.md,
+  sectionDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginHorizontal: 20,
   },
-  insightsSection: {
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.lg,
-  },
-  insightsGrid: {
+
+  // ── Key Metrics ──
+  metricsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.sm,
   },
-  insightCard: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: Spacing.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  insightHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    marginBottom: Spacing.xs,
-  },
-  mapSection: {
+  metricItem: {
+    width: '47%',
+    paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.lg,
+    backgroundColor: Colors.background,
+    borderRadius: 14,
+    gap: 2,
   },
-  mapHeader: {
+  metricDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginBottom: 4,
+  },
+
+  // ── Map ──
+  mapHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: Spacing.md,
   },
-  heatmapToggle: {
+  paceToggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: 20,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: Colors.background,
   },
-  heatmapToggleActive: {
+  paceToggleActive: {
     backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
   },
   mapContainer: {
-    height: 300,
+    height: 280,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#F0F0F0',
-    borderWidth: 1,
-    borderColor: Colors.border,
+    backgroundColor: Colors.background,
   },
-  mapStats: {
+  mapMeta: {
     flexDirection: 'row',
-    justifyContent: 'center',
     gap: Spacing.lg,
-    marginTop: Spacing.sm,
-    paddingVertical: Spacing.xs,
+    marginTop: Spacing.md,
   },
-  mapStatItem: {
+  mapMetaItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.xs,
   },
-  statsSection: {
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.lg,
-  },
-  statsList: {
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: Spacing.sm,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  statRow: {
+
+  // ── Details ──
+  detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
+    gap: Spacing.md,
   },
-  statIconWrapper: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: '#F5F5F5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.md,
-  },
-  statContent: {
+  detailContent: {
     flex: 1,
+    gap: 1,
   },
-  statLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    flex: 1,
+  detailDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: Colors.border,
+    marginLeft: 34,
   },
+
+  // ── Branding ──
   brandingFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.lg,
-    marginTop: Spacing.md,
-    gap: Spacing.sm,
+    paddingVertical: Spacing.xl,
   },
-  brandingText: {
-    marginLeft: Spacing.xs,
-  },
+
+  // ── Off-screen ──
   offscreenContainer: {
     position: 'absolute',
     left: -10000,
     top: 0,
   },
+
+  // ── Delete Modal ──
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.xl,
   },
   modalContent: {
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.large,
+    borderRadius: 20,
     padding: Spacing.xl,
     width: '100%',
-    maxWidth: 400,
+    maxWidth: 340,
     alignItems: 'center',
-    ...Shadows.large,
   },
-  modalIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: Colors.error + '15',
+  modalIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: Colors.error + '12',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.lg,
@@ -901,24 +831,21 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     width: '100%',
   },
-  modalButton: {
+  modalBtn: {
     flex: 1,
-    paddingVertical: Spacing.md,
+    paddingVertical: 14,
     borderRadius: BorderRadius.medium,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  modalButtonCancel: {
-    backgroundColor: Colors.border,
+  modalBtnCancel: {
+    backgroundColor: Colors.background,
   },
-  modalButtonDelete: {
+  modalBtnDelete: {
     backgroundColor: Colors.error,
   },
-  modalLoadingContainer: {
+  modalLoading: {
     alignItems: 'center',
     paddingVertical: Spacing.md,
-  },
-  modalLoadingText: {
-    marginTop: Spacing.md,
   },
 });

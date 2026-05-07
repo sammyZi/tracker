@@ -50,7 +50,19 @@ class NotificationService {
         bypassDnd: false,
         description: 'Shows your current activity progress',
         enableVibrate: false,
-        showBadge: false,
+        showBadge: true,
+      });
+
+      // Also create a default channel for completion / milestone notifications
+      await Notifications.setNotificationChannelAsync('activity-alerts', {
+        name: 'Activity Alerts',
+        importance: Notifications.AndroidImportance.DEFAULT,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#6C63FF',
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+        description: 'Milestones, goal achievements, and activity completion',
+        enableVibrate: true,
+        showBadge: true,
       });
     }
   }
@@ -118,7 +130,7 @@ class NotificationService {
     }
 
     try {
-      const title = isPaused 
+      const title = isPaused
         ? 'Activity Paused'
         : 'Activity in Progress';
 
@@ -140,6 +152,9 @@ class NotificationService {
           sound: false,
           badge: 0,
           color: '#6C63FF', // App primary color
+          ...(Platform.OS === 'android' && {
+            channelId: ACTIVITY_CHANNEL_ID,
+          }),
         },
         trigger: null, // Show immediately
       });
@@ -166,12 +181,13 @@ class NotificationService {
     isPaused: boolean = false
   ): Promise<void> {
     const now = Date.now();
-    
-    // Throttle updates - only update every 1 second to match the timer tick
-    if (now - this.lastNotificationUpdate < 1000) {
+
+    // Throttle updates — update every 2 seconds for smooth real-time feel
+    // without excessive scheduling overhead
+    if (now - this.lastNotificationUpdate < 2000) {
       return;
     }
-    
+
     this.lastNotificationUpdate = now;
     await this.showActivityNotification(metrics, activityType, units, isPaused);
   }
@@ -183,13 +199,13 @@ class NotificationService {
     try {
       // Dismiss by identifier
       await Notifications.dismissNotificationAsync(ACTIVITY_NOTIFICATION_IDENTIFIER);
-      
+
       // Also dismiss all notifications to be safe
       await Notifications.dismissAllNotificationsAsync();
-      
+
       this.currentNotificationId = null;
       this.lastNotificationUpdate = 0;
-      
+
       console.log('Activity notification dismissed');
     } catch (error) {
       console.error('Error dismissing activity notification:', error);
@@ -321,8 +337,17 @@ class NotificationService {
     const duration = formatDuration(metrics.duration);
     const distance = formatDistance(metrics.distance, units, 2);
     const pace = formatPace(metrics.averagePace, units);
+    const steps = metrics.steps > 0 ? `${metrics.steps.toLocaleString()} steps` : '';
+    const calories = metrics.calories > 0 ? `${Math.round(metrics.calories)} cal` : '';
 
-    return `${duration} • ${distance} • Avg Pace: ${pace}`;
+    // Build a compact, info-rich notification body
+    let line1 = `⏱ ${duration}  •  📏 ${distance}`;
+    if (pace !== '--:--') {
+      line1 += `  •  🏃 ${pace}`;
+    }
+
+    const extras = [steps, calories].filter(Boolean).join('  •  ');
+    return extras ? `${line1}\n${extras}` : line1;
   }
 
   /**
