@@ -7,7 +7,7 @@
  * - Quick stats summary
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -19,6 +19,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   RefreshControl,
+  Animated,
+  Dimensions,
 } from 'react-native';
 
 /** Generate a UUID v4 string. */
@@ -65,10 +67,50 @@ export const ProfileScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  
+
+  // Edit modal animation refs
+  const editOverlayAnim = useRef(new Animated.Value(0)).current;
+  const editSlideAnim = useRef(new Animated.Value(Dimensions.get('window').height)).current;
+
+  const openEditModal = useCallback(() => {
+    setEditName(profile?.name || '');
+    setEditWeight(profile?.weight?.toString() || '');
+    setEditHeight(profile?.height?.toString() || '');
+    setEditModalVisible(true);
+    Animated.parallel([
+      Animated.timing(editOverlayAnim, { toValue: 1, duration: 350, useNativeDriver: true }),
+      Animated.spring(editSlideAnim, {
+        toValue: 0,
+        damping: 28,
+        stiffness: 120,
+        mass: 0.95,
+        useNativeDriver: true,
+        restSpeedThreshold: 100,
+        restDisplacementThreshold: 40,
+      }),
+    ]).start();
+  }, [profile]);
+
+  const closeEditModal = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(editOverlayAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+      Animated.spring(editSlideAnim, {
+        toValue: Dimensions.get('window').height,
+        damping: 28,
+        stiffness: 120,
+        mass: 0.95,
+        useNativeDriver: true,
+        restSpeedThreshold: 100,
+        restDisplacementThreshold: 40,
+      }),
+    ]).start(() => {
+      setEditModalVisible(false);
+    });
+  }, []);
+
   // Use statistics hook for detailed stats
   const { stats, loading: statsLoading, refresh: refreshStats } = useStatistics(activeTab as StatsPeriod);
-  
+
   // Edit form state
   const [editName, setEditName] = useState('');
   const [editWeight, setEditWeight] = useState('');
@@ -105,7 +147,7 @@ export const ProfileScreen: React.FC = () => {
       const savedProfile = await StorageService.getUserProfile();
       const savedSettings = await StorageService.getSettings();
       const fetchedActivities = await StorageService.getActivities({});
-      
+
       setAllActivities(fetchedActivities);
       if (savedProfile) {
         setProfile(savedProfile);
@@ -128,7 +170,7 @@ export const ProfileScreen: React.FC = () => {
         setProfile(defaultProfile);
         setEditName(defaultProfile.name);
       }
-      
+
       setSettings(savedSettings);
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -170,7 +212,7 @@ export const ProfileScreen: React.FC = () => {
   const handlePickImage = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
+
       if (status !== 'granted') {
         showConfirm(
           'Permission Required',
@@ -183,7 +225,7 @@ export const ProfileScreen: React.FC = () => {
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true, 
+        allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
       });
@@ -249,7 +291,7 @@ export const ProfileScreen: React.FC = () => {
 
       await StorageService.saveUserProfile(updatedProfile);
       setProfile(updatedProfile);
-      setEditModalVisible(false);
+      closeEditModal();
       showConfirm(
         'Success',
         'Profile updated successfully',
@@ -267,12 +309,7 @@ export const ProfileScreen: React.FC = () => {
     }
   };
 
-  const openEditModal = () => {
-    setEditName(profile?.name || '');
-    setEditWeight(profile?.weight?.toString() || '');
-    setEditHeight(profile?.height?.toString() || '');
-    setEditModalVisible(true);
-  };
+  // openEditModal is now defined above with animation
 
   const renderTabBar = () => (
     <View style={styles.tabBar}>
@@ -352,8 +389,8 @@ export const ProfileScreen: React.FC = () => {
         <Text variant="large" weight="bold" color={colors.textPrimary}>
           Profile & Stats
         </Text>
-        <TouchableOpacity 
-          onPress={handleRefresh} 
+        <TouchableOpacity
+          onPress={handleRefresh}
           disabled={refreshing}
           style={[styles.syncButton, { backgroundColor: colors.surface }]}
           activeOpacity={0.7}
@@ -506,20 +543,29 @@ export const ProfileScreen: React.FC = () => {
       {/* Edit Profile Modal */}
       <Modal
         visible={editModalVisible}
-        animationType="fade"
+        animationType="none"
         transparent={true}
-        onRequestClose={() => setEditModalVisible(false)}
+        onRequestClose={closeEditModal}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalContainer}
         >
-          <View style={styles.modalContent}>
+          {/* Fading overlay */}
+          <Animated.View
+            style={[StyleSheet.absoluteFill, styles.modalOverlayBg, { opacity: editOverlayAnim }]}
+          >
+            <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeEditModal} />
+          </Animated.View>
+
+          {/* Sliding content */}
+          <Animated.View style={[styles.modalContent, { transform: [{ translateY: editSlideAnim }] }]}>
+            <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
               <Text variant="medium" weight="bold" color={Colors.textPrimary}>
                 Edit Profile
               </Text>
-              <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+              <TouchableOpacity onPress={closeEditModal}>
                 <Ionicons name="close" size={24} color={Colors.textSecondary} />
               </TouchableOpacity>
             </View>
@@ -575,7 +621,7 @@ export const ProfileScreen: React.FC = () => {
               <Button
                 title="Cancel"
                 variant="outline"
-                onPress={() => setEditModalVisible(false)}
+                onPress={closeEditModal}
                 style={styles.modalButton}
               />
               <Button
@@ -585,7 +631,7 @@ export const ProfileScreen: React.FC = () => {
                 style={styles.modalButton}
               />
             </View>
-          </View>
+          </Animated.View>
         </KeyboardAvoidingView>
       </Modal>
 
@@ -612,8 +658,8 @@ export const ProfileScreen: React.FC = () => {
         }}
       >
         <View style={styles.imageViewerOverlay}>
-          <TouchableOpacity 
-            style={styles.imageViewerClose} 
+          <TouchableOpacity
+            style={styles.imageViewerClose}
             onPress={() => {
               setImageViewerVisible(false);
               setPendingImageUri(null);
@@ -633,8 +679,8 @@ export const ProfileScreen: React.FC = () => {
                 {pendingImageUri ? (
                   // Preview Mode Actions
                   <>
-                    <TouchableOpacity 
-                      style={[styles.imageViewerButton, styles.imageViewerButtonDelete]} 
+                    <TouchableOpacity
+                      style={[styles.imageViewerButton, styles.imageViewerButtonDelete]}
                       onPress={() => {
                         setImageViewerVisible(false);
                         setPendingImageUri(null);
@@ -644,8 +690,8 @@ export const ProfileScreen: React.FC = () => {
                       <Text style={styles.imageViewerButtonTextDelete}>Cancel</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity 
-                      style={[styles.imageViewerButton, { backgroundColor: Colors.success }]} 
+                    <TouchableOpacity
+                      style={[styles.imageViewerButton, { backgroundColor: Colors.success }]}
                       onPress={async () => {
                         try {
                           const updatedProfile: UserProfile = {
@@ -669,8 +715,8 @@ export const ProfileScreen: React.FC = () => {
                 ) : (
                   // Normal View Mode Actions
                   <>
-                    <TouchableOpacity 
-                      style={[styles.imageViewerButton, styles.imageViewerButtonDelete]} 
+                    <TouchableOpacity
+                      style={[styles.imageViewerButton, styles.imageViewerButtonDelete]}
                       onPress={() => {
                         setImageViewerVisible(false);
                         setTimeout(handleRemoveImage, 350);
@@ -680,8 +726,8 @@ export const ProfileScreen: React.FC = () => {
                       <Text style={styles.imageViewerButtonTextDelete}>Delete</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity 
-                      style={[styles.imageViewerButton, styles.imageViewerButtonUpdate]} 
+                    <TouchableOpacity
+                      style={[styles.imageViewerButton, styles.imageViewerButtonUpdate]}
                       onPress={() => {
                         setImageViewerVisible(false);
                         setTimeout(handlePickImage, 350);
@@ -843,6 +889,8 @@ const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
     justifyContent: 'flex-end',
+  },
+  modalOverlayBg: {
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
@@ -851,6 +899,15 @@ const styles = StyleSheet.create({
     borderTopRightRadius: BorderRadius.extraLarge,
     maxHeight: '80%',
     ...Shadows.large,
+  },
+  modalHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.border,
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 4,
   },
   modalHeader: {
     flexDirection: 'row',
