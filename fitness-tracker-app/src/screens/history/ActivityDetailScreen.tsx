@@ -335,8 +335,12 @@ export const ActivityDetailScreen: React.FC<any> = ({
             </Text>
             <View style={styles.metricsRow}>
               <View style={styles.metricItem}>
-                <View style={[styles.metricDot, { backgroundColor: Colors.primary }]} />
-                <Text variant="extraSmall" color={Colors.textSecondary}>Steps</Text>
+                <View style={styles.metricHeader}>
+                  <View style={[styles.metricIconWrap, { backgroundColor: Colors.primary + '15' }]}>
+                    <Ionicons name="footsteps-outline" size={16} color={Colors.primary} />
+                  </View>
+                  <Text variant="extraSmall" weight="medium" color={Colors.textSecondary}>Steps</Text>
+                </View>
                 <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
                   {activity.steps.toLocaleString()}
                 </Text>
@@ -344,8 +348,12 @@ export const ActivityDetailScreen: React.FC<any> = ({
               {computedStats && (
                 <>
                   <View style={styles.metricItem}>
-                    <View style={[styles.metricDot, { backgroundColor: Colors.success }]} />
-                    <Text variant="extraSmall" color={Colors.textSecondary}>Speed</Text>
+                    <View style={styles.metricHeader}>
+                      <View style={[styles.metricIconWrap, { backgroundColor: Colors.success + '15' }]}>
+                        <Ionicons name="speedometer-outline" size={16} color={Colors.success} />
+                      </View>
+                      <Text variant="extraSmall" weight="medium" color={Colors.textSecondary}>Speed</Text>
+                    </View>
                     <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
                       {computedStats.speed}
                       <Text variant="extraSmall" color={Colors.textSecondary}>
@@ -354,16 +362,24 @@ export const ActivityDetailScreen: React.FC<any> = ({
                     </Text>
                   </View>
                   <View style={styles.metricItem}>
-                    <View style={[styles.metricDot, { backgroundColor: Colors.info }]} />
-                    <Text variant="extraSmall" color={Colors.textSecondary}>Cadence</Text>
+                    <View style={styles.metricHeader}>
+                      <View style={[styles.metricIconWrap, { backgroundColor: Colors.info + '15' }]}>
+                        <Ionicons name="pulse-outline" size={16} color={Colors.info} />
+                      </View>
+                      <Text variant="extraSmall" weight="medium" color={Colors.textSecondary}>Cadence</Text>
+                    </View>
                     <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
                       {computedStats.cadence}
                       <Text variant="extraSmall" color={Colors.textSecondary}> spm</Text>
                     </Text>
                   </View>
                   <View style={styles.metricItem}>
-                    <View style={[styles.metricDot, { backgroundColor: Colors.warning }]} />
-                    <Text variant="extraSmall" color={Colors.textSecondary}>Stride</Text>
+                    <View style={styles.metricHeader}>
+                      <View style={[styles.metricIconWrap, { backgroundColor: Colors.warning + '15' }]}>
+                        <Ionicons name="resize-outline" size={16} color={Colors.warning} />
+                      </View>
+                      <Text variant="extraSmall" weight="medium" color={Colors.textSecondary}>Stride</Text>
+                    </View>
                     <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
                       {computedStats.stride}
                       <Text variant="extraSmall" color={Colors.textSecondary}> cm</Text>
@@ -725,13 +741,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     backgroundColor: Colors.background,
     borderRadius: 14,
-    gap: 2,
+    gap: 6,
   },
-  metricDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginBottom: 4,
+  metricHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  metricIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   // ── Map ──

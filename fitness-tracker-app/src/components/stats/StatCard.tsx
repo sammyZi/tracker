@@ -25,10 +25,14 @@ export const StatCard: React.FC<StatCardProps> = ({
 }) => {
   return (
     <View style={styles.card}>
-      <View style={[styles.dot, { backgroundColor: color }]} />
-      <Text variant="extraSmall" color={Colors.textSecondary} style={styles.label}>
-        {label}
-      </Text>
+      <View style={styles.header}>
+        <View style={[styles.iconWrap, { backgroundColor: color + '15' }]}>
+          <Ionicons name={icon} size={16} color={color} />
+        </View>
+        <Text variant="extraSmall" weight="medium" color={Colors.textSecondary}>
+          {label}
+        </Text>
+      </View>
       <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
         {value}
       </Text>
@@ -42,14 +46,18 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.sm,
     marginBottom: Spacing.md,
+    gap: 6,
   },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginBottom: 6,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  label: {
-    marginBottom: 2,
+  iconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

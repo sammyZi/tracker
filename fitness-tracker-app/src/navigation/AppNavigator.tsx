@@ -60,8 +60,8 @@ const AuthStackNavigator: React.FC<{
         gestureEnabled: false,
         cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
         transitionSpec: {
-          open: { animation: 'spring', config: { damping: 20, stiffness: 200, mass: 0.8 } },
-          close: { animation: 'spring', config: { damping: 20, stiffness: 200, mass: 0.8 } },
+          open: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 100, restDisplacementThreshold: 40 } },
+          close: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 100, restDisplacementThreshold: 40 } },
         },
       }}
       initialRouteName="Login"
@@ -92,6 +92,11 @@ const HistoryStackNavigator = () => {
       screenOptions={{
         headerShown: false,
         gestureEnabled: true,
+        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        transitionSpec: {
+          open: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 100, restDisplacementThreshold: 40 } },
+          close: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 100, restDisplacementThreshold: 40 } },
+        },
       }}
     >
       <HistoryStack.Screen
@@ -114,6 +119,11 @@ const ProfileStackNavigator = () => {
       screenOptions={{
         headerShown: false,
         gestureEnabled: true,
+        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        transitionSpec: {
+          open: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 100, restDisplacementThreshold: 40 } },
+          close: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 100, restDisplacementThreshold: 40 } },
+        },
       }}
     >
       <ProfileStack.Screen
@@ -150,6 +160,12 @@ const SettingsStackNavigator = () => {
     <SettingsStack.Navigator
       screenOptions={{
         headerShown: false,
+        gestureEnabled: true,
+        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        transitionSpec: {
+          open: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 100, restDisplacementThreshold: 40 } },
+          close: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 100, restDisplacementThreshold: 40 } },
+        },
       }}
     >
       <SettingsStack.Screen name="SettingsMain" component={SettingsScreen} />
