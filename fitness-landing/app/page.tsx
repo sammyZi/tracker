@@ -1,6 +1,6 @@
 'use client'
 
-import { Activity, Target, TrendingUp, Users, Smartphone, Download, CheckCircle, Menu, X, Heart, BarChart3, MapPin, ArrowRight, Clock, Flame, Footprints } from 'lucide-react'
+import { Activity, Target, TrendingUp, Users, Smartphone, Download, CheckCircle, Menu, X, Heart, BarChart3, MapPin, ArrowRight, Clock, Flame, Footprints, Github, Mail, Instagram, Linkedin } from 'lucide-react'
 import Image from 'next/image'
 import { useEffect, useState, useRef } from 'react'
 
@@ -12,7 +12,16 @@ export default function Home() {
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20)
-      const sections = ['home', 'features', 'screenshots', 'contact']
+
+      // Explicit check for the contact section (footer)
+      // If the bottom of the viewport has scrolled at least 50px into the footer, it's active
+      const contactEl = document.getElementById('contact')
+      if (contactEl && window.scrollY + window.innerHeight >= contactEl.offsetTop + 50) {
+        setActiveSection('contact')
+        return
+      }
+
+      const sections = ['home', 'features', 'screenshots']
       const scrollPosition = window.scrollY + 200
       for (const id of sections) {
         const el = document.getElementById(id)
@@ -399,26 +408,62 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer id="contact" className="bg-sage-900 text-white py-12">
+      <footer id="contact" className="bg-sage-900 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-sage-600 flex items-center justify-center">
-                <Activity className="h-4 w-4 text-white" />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12 border-b border-sage-800 pb-12">
+            <div className="md:col-span-2">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-full bg-sage-600 flex items-center justify-center">
+                  <Activity className="h-4 w-4 text-white" />
+                </div>
+                <span className="text-2xl font-serif font-bold">Stride</span>
               </div>
-              <span className="text-xl font-bold">Stride</span>
+              <p className="text-sage-400 max-w-sm mb-6 leading-relaxed">
+                Experience smarter, real-time wellness insights with seamless tracking — empowering you to take control of your health every day.
+              </p>
+              <div className="flex items-center gap-4">
+                <a href="https://github.com/sammyZi" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-sage-800 flex items-center justify-center text-sage-400 hover:text-white hover:bg-sage-700 transition-all hover:-translate-y-1">
+                  <Github className="h-5 w-5" />
+                </a>
+                <a href="mailto:bhingesamarth@gmail.com" className="w-10 h-10 rounded-full bg-sage-800 flex items-center justify-center text-sage-400 hover:text-white hover:bg-sage-700 transition-all hover:-translate-y-1">
+                  <Mail className="h-5 w-5" />
+                </a>
+                <a href="https://www.instagram.com/sammyi_57/" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-sage-800 flex items-center justify-center text-sage-400 hover:text-white hover:bg-sage-700 transition-all hover:-translate-y-1">
+                  <Instagram className="h-5 w-5" />
+                </a>
+                <a href="https://www.linkedin.com/in/samarth-bhinge/" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-sage-800 flex items-center justify-center text-sage-400 hover:text-white hover:bg-sage-700 transition-all hover:-translate-y-1">
+                  <Linkedin className="h-5 w-5" />
+                </a>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-6 text-sm text-sage-300">
-              {navLinks.map(link => (
-                <button key={link.id} onClick={() => scrollTo(link.id)} className="hover:text-white transition-colors">
-                  {link.label}
-                </button>
-              ))}
+
+            <div>
+              <h4 className="font-bold text-lg mb-4">Quick Links</h4>
+              <ul className="space-y-3 text-sage-400 text-sm">
+                {navLinks.map(link => (
+                  <li key={link.id}>
+                    <button onClick={() => scrollTo(link.id)} className="hover:text-white transition-colors">
+                      {link.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="text-sage-400 text-sm text-center md:text-right">
-              <p>&copy; 2026 Stride. All rights reserved.</p>
-              <p className="mt-1">Built with ❤️ for fitness enthusiasts</p>
+
+            <div>
+              <h4 className="font-bold text-lg mb-4">Connect</h4>
+              <ul className="space-y-3 text-sage-400 text-sm">
+                <li><a href="https://github.com/sammyZi" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</a></li>
+                <li><a href="https://www.linkedin.com/in/samarth-bhinge/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">LinkedIn</a></li>
+                <li><a href="https://www.instagram.com/sammyi_57/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Instagram</a></li>
+                <li><a href="mailto:bhingesmaerth@gmail.com" className="hover:text-white transition-colors">Email Me</a></li>
+              </ul>
             </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sage-500 text-sm">
+            <p>&copy; {new Date().getFullYear()} Stride. Designed by Samarth Bhinge.</p>
+            <p>Built with ❤️ for fitness enthusiasts</p>
           </div>
         </div>
       </footer>
