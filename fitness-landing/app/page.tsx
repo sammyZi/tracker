@@ -375,20 +375,23 @@ export default function Home() {
       </section>
 
       {/* Trust */}
-      <section className="py-16 bg-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+      <section className="py-20 relative overflow-hidden">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-20 divide-y md:divide-y-0 md:divide-x divide-sage-200/60">
             {[
               { icon: CheckCircle, title: 'Free Forever', desc: 'No hidden fees, no premium tiers. Full access always.' },
               { icon: Footprints, title: 'No Ads Ever', desc: 'Clean, distraction-free experience focused on you.' },
               { icon: Smartphone, title: 'Works Offline', desc: 'Track activities even without an internet connection.' },
             ].map((item, i) => (
-              <div key={i} className="soft-card p-8">
-                <div className="w-12 h-12 rounded-2xl bg-sage-100 flex items-center justify-center mx-auto mb-4">
-                  <item.icon className="h-6 w-6 text-sage-600" />
+              <div key={i} className={`flex flex-col items-center text-center group ${i !== 0 ? 'pt-12 md:pt-0' : ''}`}>
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-sage-300/30 rounded-full blur-xl transform scale-50 opacity-0 group-hover:scale-150 group-hover:opacity-100 transition-all duration-500 ease-out" />
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center relative z-10 text-sage-600">
+                    <item.icon className="h-8 w-8 transition-transform duration-500 group-hover:-translate-y-1 group-hover:text-sage-800" strokeWidth={1.5} />
+                  </div>
                 </div>
-                <h3 className="font-bold text-sage-900 mb-2">{item.title}</h3>
-                <p className="text-sm text-sage-600">{item.desc}</p>
+                <h3 className="font-serif text-2xl font-bold text-sage-900 mb-3">{item.title}</h3>
+                <p className="text-sage-600 leading-relaxed max-w-[260px]">{item.desc}</p>
               </div>
             ))}
           </div>
