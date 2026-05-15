@@ -286,9 +286,15 @@ export class AuthService implements IAuthService {
   async restoreSession(): Promise<AuthSession | null> {
     try {
       // First try to restore from Supabase client (which uses AsyncStorage internally)
-      const { data, error } = await supabase.auth.getSession();
+      // Wrap in a timeout so offline app loading doesn't hang
+      const getSessionPromise = supabase.auth.getSession();
+      const timeoutPromise = new Promise<{ data: any; error: any }>((_, reject) =>
+        setTimeout(() => reject(new Error('Session restore timeout')), 3000)
+      );
 
-      if (error || !data.session) {
+      const { data, error } = await Promise.race([getSessionPromise, timeoutPromise]);
+
+      if (error || !data?.session) {
         // Fallback: try our own persisted copy
         const stored = await AsyncStorage.getItem(AUTH_SESSION_KEY);
         if (!stored) {
