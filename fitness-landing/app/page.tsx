@@ -122,9 +122,9 @@ export default function Home() {
                 <a href="https://github.com/sammyZi/Stride/releases/download/apk/Stride.apk" className="btn-primary py-2.5 px-6">
                   Get Started Now <ArrowRight className="h-4 w-4" />
                 </a>
-                <button onClick={() => scrollTo('features')} className="btn-secondary py-2.5 px-6">
-                  Learn More
-                </button>
+                <a href="https://github.com/sammyZi/Stride" target="_blank" rel="noopener noreferrer" className="btn-secondary py-2.5 px-6 flex items-center gap-2">
+                  <Github className="h-4 w-4" /> Open Source
+                </a>
               </div>
               <div className="space-y-2">
                 {[
