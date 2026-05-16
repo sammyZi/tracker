@@ -2,15 +2,18 @@ import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
-import { ActivityIndicator } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, useTheme, usePermissions } from './src/hooks';
 import { Text } from './src/components';
 import { AppNavigator } from './src/navigation';
-import { SettingsProvider, AuthProvider, SyncProvider } from './src/context';
+import { SettingsProvider, AuthProvider, SyncProvider, useAuth } from './src/context';
 import { SyncToastOverlay } from './src/components';
 import { PermissionsScreen } from './src/screens/onboarding/PermissionsScreen';
 import storageService from './src/services/storage/StorageService';
 import { configurePerformance } from './src/utils/performance';
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
 
 // Initialize performance optimizations for 120 FPS
 configurePerformance();
@@ -25,6 +28,8 @@ function AppContent() {
     loading: permissionsLoading,
     markPermissionsRequested,
   } = usePermissions();
+  
+  const { isLoading: authLoading } = useAuth();
 
   const [showPermissions, setShowPermissions] = useState(false);
   const [storageInitialized, setStorageInitialized] = useState(false);
@@ -49,12 +54,16 @@ function AppContent() {
     }
   }, [permissionsLoading, hasRequestedPermissions]);
 
-  if (!fontsLoaded || permissionsLoading || !storageInitialized) {
-    return (
-      <SafeAreaView style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </SafeAreaView>
-    );
+  const isAppReady = (fontsLoaded || error) && !permissionsLoading && storageInitialized && !authLoading;
+
+  React.useEffect(() => {
+    if (isAppReady) {
+      SplashScreen.hideAsync();
+    }
+  }, [isAppReady]);
+
+  if (!isAppReady) {
+    return null;
   }
 
   if (error) {
