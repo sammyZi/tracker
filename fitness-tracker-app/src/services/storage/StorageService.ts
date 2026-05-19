@@ -68,23 +68,36 @@ class StorageService {
 
   /**
    * Acquire a per-key lock. Only one write to a given key can proceed at
-   * a time; concurrent callers wait for the previous write to finish.
+   * a time; concurrent callers form a FIFO queue.
+   *
+   * Each caller chains onto the previous lock: it sets its own promise in
+   * the map BEFORE awaiting the previous one, so the NEXT caller will
+   * properly wait for THIS caller too.
    */
   private async acquireLock(key: string): Promise<() => void> {
-    // Wait for any existing lock on this key to release
-    while (this._locks.has(key)) {
-      await this._locks.get(key);
-    }
+    // Get whatever lock is currently held/queued for this key
+    const prevLock = this._locks.get(key) ?? Promise.resolve();
 
-    // Create a new lock for this key
+    // Create our own lock promise
     let releaseLock!: () => void;
-    const lockPromise = new Promise<void>((resolve) => {
+    const myLock = new Promise<void>((resolve) => {
       releaseLock = resolve;
     });
-    this._locks.set(key, lockPromise);
 
+    // Register our lock BEFORE awaiting — this ensures the next caller
+    // will chain onto us, not onto the previous holder.
+    this._locks.set(key, myLock);
+
+    // Wait for the previous holder to finish
+    await prevLock;
+
+    // We now hold the lock
     return () => {
-      this._locks.delete(key);
+      // Only clean up the map entry if we're still the latest lock
+      // (otherwise a later caller already replaced us)
+      if (this._locks.get(key) === myLock) {
+        this._locks.delete(key);
+      }
       releaseLock();
     };
   }
@@ -203,27 +216,50 @@ class StorageService {
   // ==================== Activities ====================
 
   /**
-   * Save an activity to local storage
+   * Create a lightweight summary of an activity for the index.
+   * Strips the `route` array (which can be huge with GPS data) so the
+   * `@activities` key stays well under Android's 2 MB CursorWindow limit.
+   * Full activity data (with route) is stored in `@activity_{id}` keys.
+   */
+  private toActivitySummary(activity: Activity): Omit<Activity, 'route'> & { route: never[] } {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { route, ...summary } = activity;
+    return { ...summary, route: [] } as any;
+  }
+
+  /**
+   * Save an activity to local storage.
+   *
+   * Full data (with route) → `@activity_{id}` (individual key).
+   * Lightweight summary (no route) → `@activities` index.
    */
   async saveActivity(activity: Activity): Promise<void> {
     const unlock = await this.acquireLock(STORAGE_KEYS.ACTIVITIES);
     try {
-      // Single read of the activity list
-      const activitiesJson = await AsyncStorage.getItem(STORAGE_KEYS.ACTIVITIES);
-      const existingActivities: Activity[] = activitiesJson ? JSON.parse(activitiesJson) : [];
+      // Save full activity data to individual key
+      const activityKey = `${STORAGE_KEYS.ACTIVITY_PREFIX}${activity.id}`;
+      await AsyncStorage.setItem(activityKey, JSON.stringify(activity));
+
+      // Read the lightweight index (may fail if migrating from old bloated format)
+      let existingActivities: Activity[] = [];
+      try {
+        const activitiesJson = await AsyncStorage.getItem(STORAGE_KEYS.ACTIVITIES);
+        existingActivities = activitiesJson ? JSON.parse(activitiesJson) : [];
+      } catch (readError) {
+        console.warn('[Storage] Old activity index too large, rebuilding...');
+        await AsyncStorage.removeItem(STORAGE_KEYS.ACTIVITIES);
+        existingActivities = await this.rebuildActivityIndex();
+      }
 
       const existingIndex = existingActivities.findIndex(a => a.id === activity.id);
       const isUpdate = existingIndex >= 0;
 
-      // Save individual activity
-      const activityKey = `${STORAGE_KEYS.ACTIVITY_PREFIX}${activity.id}`;
-      await AsyncStorage.setItem(activityKey, JSON.stringify(activity));
-
-      // Update activities list
+      // Update the index with a lightweight summary (no route)
+      const summary = this.toActivitySummary(activity);
       if (isUpdate) {
-        existingActivities[existingIndex] = activity;
+        existingActivities[existingIndex] = summary as any;
       } else {
-        existingActivities.push(activity);
+        existingActivities.push(summary as any);
       }
 
       // Sort by startTime descending (newest first)
@@ -250,14 +286,23 @@ class StorageService {
     if (activities.length === 0) return;
     const unlock = await this.acquireLock(STORAGE_KEYS.ACTIVITIES);
     try {
-      const activitiesJson = await AsyncStorage.getItem(STORAGE_KEYS.ACTIVITIES);
-      const existingActivities: Activity[] = activitiesJson ? JSON.parse(activitiesJson) : [];
+      // Read existing index (may fail if old bloated index exceeds CursorWindow)
+      let existingActivities: Activity[] = [];
+      try {
+        const activitiesJson = await AsyncStorage.getItem(STORAGE_KEYS.ACTIVITIES);
+        existingActivities = activitiesJson ? JSON.parse(activitiesJson) : [];
+      } catch (readError) {
+        console.warn('[Storage] Old activity index too large, starting fresh');
+        // Remove the bloated key so it doesn't block future reads
+        await AsyncStorage.removeItem(STORAGE_KEYS.ACTIVITIES);
+      }
       const existingMap = new Map(existingActivities.map(a => [a.id, a]));
 
-      // Merge all incoming activities into the map
+      // Merge all incoming activities into the map and save individual keys
       for (const activity of activities) {
-        existingMap.set(activity.id, activity);
-        // Also save individual activity key
+        // Lightweight summary for the index
+        existingMap.set(activity.id, this.toActivitySummary(activity) as any);
+        // Full data (with route) for the individual key
         const activityKey = `${STORAGE_KEYS.ACTIVITY_PREFIX}${activity.id}`;
         await AsyncStorage.setItem(activityKey, JSON.stringify(activity));
       }
@@ -266,6 +311,7 @@ class StorageService {
       const mergedList = Array.from(existingMap.values());
       mergedList.sort((a, b) => b.startTime - a.startTime);
       await AsyncStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(mergedList));
+      console.log(`[Storage] Saved ${activities.length} activities (index: ${mergedList.length} total)`);
     } catch (error) {
       console.error('Error saving many activities:', error);
       throw new Error('Failed to save activities batch');
@@ -275,7 +321,10 @@ class StorageService {
   }
 
   /**
-   * Get activities with optional filters
+   * Get activities with optional filters.
+   *
+   * Returns lightweight summaries from the index (no route data).
+   * For full activity data with route, use `getActivity(id)`.
    */
   async getActivities(filters?: ActivityFilters): Promise<Activity[]> {
     try {
@@ -301,12 +350,57 @@ class StorageService {
       return activities;
     } catch (error) {
       console.error('Error getting activities:', error);
-      return [];
+      // If the index is corrupted/too large, try to rebuild from individual keys
+      console.log('[Storage] Attempting to rebuild activity index from individual keys...');
+      try {
+        return await this.rebuildActivityIndex();
+      } catch (rebuildError) {
+        console.error('Error rebuilding activity index:', rebuildError);
+        return [];
+      }
     }
   }
 
   /**
-   * Get a single activity by ID
+   * Rebuild the activity index from individual `@activity_{id}` keys.
+   * Used as a fallback when the `@activities` key is corrupted or too large
+   * (e.g., from older app versions that stored full route data in the index).
+   */
+  private async rebuildActivityIndex(): Promise<Activity[]> {
+    const allKeys = await AsyncStorage.getAllKeys();
+    const activityKeys = allKeys.filter(key => key.startsWith(STORAGE_KEYS.ACTIVITY_PREFIX));
+
+    if (activityKeys.length === 0) return [];
+
+    console.log(`[Storage] Rebuilding index from ${activityKeys.length} individual activity keys`);
+
+    const activities: Activity[] = [];
+    for (const key of activityKeys) {
+      try {
+        const json = await AsyncStorage.getItem(key);
+        if (json) {
+          const activity: Activity = JSON.parse(json);
+          activities.push(activity);
+        }
+      } catch (err) {
+        console.warn(`[Storage] Skipping corrupted activity key: ${key}`);
+      }
+    }
+
+    // Sort newest first
+    activities.sort((a, b) => b.startTime - a.startTime);
+
+    // Write the rebuilt index (lightweight, no routes)
+    const summaries = activities.map(a => this.toActivitySummary(a));
+    await AsyncStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(summaries));
+    console.log(`[Storage] Rebuilt activity index with ${summaries.length} entries`);
+
+    // Return summaries (without routes) for consistency
+    return summaries as any[];
+  }
+
+  /**
+   * Get a single activity by ID (with full route data)
    */
   async getActivity(activityId: string): Promise<Activity | null> {
     try {
@@ -329,8 +423,9 @@ class StorageService {
       const activityKey = `${STORAGE_KEYS.ACTIVITY_PREFIX}${activityId}`;
       await AsyncStorage.removeItem(activityKey);
 
-      // Update activities list - remove from the list completely
-      const activities = await this.getActivities();
+      // Update activities index - remove from the list
+      const activitiesJson = await AsyncStorage.getItem(STORAGE_KEYS.ACTIVITIES);
+      const activities: Activity[] = activitiesJson ? JSON.parse(activitiesJson) : [];
       const filteredActivities = activities.filter(a => a.id !== activityId);
       await AsyncStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(filteredActivities));
       
@@ -652,12 +747,19 @@ class StorageService {
    */
   async exportData(): Promise<string> {
     try {
-      const [profile, settings, activities, goals] = await Promise.all([
+      const [profile, settings, activitySummaries, goals] = await Promise.all([
         this.getUserProfile(),
         this.getSettings(),
         this.getActivities(),
         this.getGoals(),
       ]);
+
+      // For export, get full activities (with routes) from individual keys
+      const activities: Activity[] = [];
+      for (const summary of activitySummaries) {
+        const full = await this.getActivity(summary.id);
+        activities.push(full || summary); // Fallback to summary if individual key missing
+      }
 
       const exportData = {
         version: '1.0.0',
