@@ -15,6 +15,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { File } from 'expo-file-system';
 import { supabase } from '../supabase';
 import StorageService from '../storage/StorageService';
 import type { Activity, UserProfile, Goal } from '../../types';
@@ -293,14 +294,97 @@ class SyncService {
     }
   }
 
+  // ── Profile image cloud storage ─────────────────────────────────────────
+
+  /** Storage bucket name for profile pictures. */
+  private static readonly PROFILE_BUCKET = 'profile-pictures';
+
+  /**
+   * Upload a local profile picture to Supabase Storage.
+   * Returns the public URL of the uploaded image, or null on failure.
+   */
+  private async uploadProfileImage(localUri: string): Promise<string | null> {
+    if (!this._userId || !localUri) return null;
+
+    // Skip if already a cloud URL (http/https)
+    if (localUri.startsWith('http://') || localUri.startsWith('https://')) {
+      return localUri;
+    }
+
+    try {
+      const storagePath = `${this._userId}/avatar.jpg`;
+
+      // Read the local file as base64
+      const file = new File(localUri);
+      const base64Data = await file.base64();
+
+      // Decode base64 to Uint8Array for upload
+      const binaryString = atob(base64Data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      // Upload to Supabase Storage (upsert to overwrite existing)
+      const { error: uploadError } = await supabase.storage
+        .from(SyncService.PROFILE_BUCKET)
+        .upload(storagePath, bytes, {
+          contentType: 'image/jpeg',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        logger.warn('Failed to upload profile image', uploadError);
+        return null;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from(SyncService.PROFILE_BUCKET)
+        .getPublicUrl(storagePath);
+
+      logger.log(`Profile image uploaded: ${urlData.publicUrl}`);
+      return urlData.publicUrl;
+    } catch (err) {
+      logger.error('Error uploading profile image', err);
+      return null;
+    }
+  }
+
+  /**
+   * Resolve a cloud profile picture URL for local use.
+   *
+   * React Native's `Image` component natively handles http/https URLs
+   * with built-in caching, so we simply pass through the cloud URL.
+   * This avoids file system write compatibility issues across
+   * expo-file-system versions and works reliably on all platforms.
+   */
+  private async downloadProfileImage(cloudUrl: string): Promise<string | null> {
+    if (!cloudUrl) return null;
+    // Return the URL as-is — Image component handles it directly
+    return cloudUrl;
+  }
+
   /**
    * Upload a user profile to Supabase (upsert).
+   * Also uploads the profile picture to Supabase Storage if it's a local file.
    */
   async syncUserProfile(profile: UserProfile): Promise<SyncResult> {
     if (!this._userId) return makeSyncResult(0, 1, [{ itemId: 'profile', operation: 'upload', code: 'CONFIG_MISSING', error: 'Not initialized', timestamp: Date.now() }]);
 
     try {
+      // Upload profile picture to cloud storage if it's a local file
+      let cloudImageUrl: string | null = null;
+      if (profile.profilePictureUri) {
+        cloudImageUrl = await this.uploadProfileImage(profile.profilePictureUri);
+      }
+
+      // Build the profile row with the cloud image URL
       const row = profileToRow(profile, this._userId);
+      if (cloudImageUrl) {
+        row.profile_picture_url = cloudImageUrl;
+      }
+
       const { error } = await supabase
         .from('user_profiles')
         .upsert(row, { onConflict: 'id' });
@@ -601,6 +685,15 @@ class SyncService {
       if (error || !data) return;
 
       const remoteProfile = rowToProfile(data);
+
+      // Download profile picture from cloud to local storage
+      if (remoteProfile.profilePictureUri) {
+        const localImageUri = await this.downloadProfileImage(remoteProfile.profilePictureUri);
+        if (localImageUri) {
+          remoteProfile.profilePictureUri = localImageUri;
+        }
+      }
+
       const localProfile = await StorageService.getUserProfile();
 
       if (!localProfile) {
