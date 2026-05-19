@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import StorageService from '../services/storage/StorageService';
 import { PersonalRecords } from '../types';
+import { useSync } from '../context';
 
 interface UsePersonalRecordsReturn {
   records: PersonalRecords | null;
@@ -19,6 +20,7 @@ interface UsePersonalRecordsReturn {
  * @returns Personal records data and loading state
  */
 export const usePersonalRecords = (): UsePersonalRecordsReturn => {
+  const { syncVersion } = useSync();
   const [records, setRecords] = useState<PersonalRecords | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -41,9 +43,10 @@ export const usePersonalRecords = (): UsePersonalRecordsReturn => {
     await loadRecords();
   }, [loadRecords]);
 
+  // Load records on mount and when cloud data is downloaded
   useEffect(() => {
     loadRecords();
-  }, [loadRecords]);
+  }, [loadRecords, syncVersion]);
 
   return {
     records,

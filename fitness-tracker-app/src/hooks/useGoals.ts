@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Goal, GoalType, GoalPeriod } from '../types';
 import StorageService from '../services/storage/StorageService';
 import GoalsService from '../services/goals/GoalsService';
+import { useSync } from '../context';
 
 /** Generate a UUID v4 string. */
 const generateUUID = (): string => {
@@ -18,6 +19,7 @@ const generateUUID = (): string => {
 };
 
 export const useGoals = () => {
+  const { syncVersion } = useSync();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [activeGoals, setActiveGoals] = useState<Goal[]>([]);
   const [achievedGoals, setAchievedGoals] = useState<Goal[]>([]);
@@ -50,9 +52,10 @@ export const useGoals = () => {
     }
   }, []);
 
+  // Load goals on mount and when cloud data is downloaded
   useEffect(() => {
     loadGoals();
-  }, [loadGoals]);
+  }, [loadGoals, syncVersion]);
 
   const createGoal = useCallback(
     async (type: GoalType, target: number, period: GoalPeriod): Promise<void> => {

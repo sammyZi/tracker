@@ -554,13 +554,16 @@ class SyncService {
       const localActivities = await StorageService.getActivities();
       const localMap = new Map(localActivities.map((a) => [a.id, a]));
 
+      // Collect activities that need to be saved locally
+      const toSave: Activity[] = [];
+
       for (const row of data) {
         const remote = rowToActivity(row);
         const local = localMap.get(remote.id);
 
         if (!local) {
-          // New from cloud — save locally
-          await StorageService.saveActivity(remote);
+          // New from cloud
+          toSave.push(remote);
         } else {
           // Both exist — resolve conflict using timestamps
           const winner = this.resolveConflict(
@@ -568,10 +571,16 @@ class SyncService {
             { ...remote, _timestamp: remote.createdAt },
           );
           if (winner === remote) {
-            await StorageService.saveActivity(remote);
+            toSave.push(remote);
           }
           // If local wins, nothing to do — it's already saved
         }
+      }
+
+      // Batch save all resolved activities at once
+      if (toSave.length > 0) {
+        await StorageService.saveManyActivities(toSave);
+        logger.log(`Downloaded ${toSave.length} activities from cloud`);
       }
     } catch (err) {
       logger.error('Error downloading activities', err);
@@ -635,12 +644,15 @@ class SyncService {
       const localGoals = await StorageService.getGoals();
       const localMap = new Map(localGoals.map((g) => [g.id, g]));
 
+      // Collect goals that need to be saved locally
+      const toSave: Goal[] = [];
+
       for (const row of data) {
         const remote = rowToGoal(row);
         const local = localMap.get(remote.id);
 
         if (!local) {
-          await StorageService.saveGoal(remote);
+          toSave.push(remote);
         } else {
           // Both exist — resolve conflict using createdAt
           const winner = this.resolveConflict(
@@ -648,9 +660,15 @@ class SyncService {
             { ...remote, _timestamp: remote.createdAt },
           );
           if (winner === remote) {
-            await StorageService.saveGoal(remote);
+            toSave.push(remote);
           }
         }
+      }
+
+      // Batch save all resolved goals at once
+      if (toSave.length > 0) {
+        await StorageService.saveManyGoals(toSave);
+        logger.log(`Downloaded ${toSave.length} goals from cloud`);
       }
     } catch (err) {
       logger.error('Error downloading goals', err);
