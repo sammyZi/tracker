@@ -67,6 +67,19 @@ export interface SyncContextValue {
   triggerSync: () => Promise<void>;
   /** Retry all queued / failed operations. */
   retryFailed: () => Promise<void>;
+  /**
+   * Monotonically increasing counter that bumps every time cloud data is
+   * downloaded into local storage. Hooks should include this in their
+   * useEffect dependency arrays so they re-read from AsyncStorage after
+   * a sync completes.
+   */
+  syncVersion: number;
+  /**
+   * True once the initial cloud data download has completed (or was
+   * skipped because the user is not authenticated). Hooks can use this
+   * to avoid showing stale/empty data before the first sync finishes.
+   */
+  dataReady: boolean;
 }
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -83,6 +96,8 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [queuedCount, setQueuedCount] = useState(0);
   const [isOnline, setIsOnline] = useState(true);
   const [notifications, setNotifications] = useState<SyncNotification[]>([]);
+  const [syncVersion, setSyncVersion] = useState(0);
+  const [dataReady, setDataReady] = useState(false);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dismissTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -177,7 +192,15 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   //     user doesn't have to toggle it manually after every login.
 
   useEffect(() => {
-    if (!isAuthenticated || !user) return;
+    // Reset data readiness when auth state changes
+    setDataReady(false);
+
+    if (!isAuthenticated || !user) {
+      // Not authenticated — mark data as ready immediately so hooks
+      // don't wait forever for a download that will never happen.
+      setDataReady(true);
+      return;
+    }
 
     const initSync = async () => {
       try {
@@ -192,8 +215,15 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // Download cloud data (restores profile/activities/goals on fresh install)
         await SyncService.downloadAllData();
         console.log('[Sync] Cloud data downloaded');
+
+        // Bump syncVersion so all hooks re-read from local storage
+        setSyncVersion((v) => v + 1);
       } catch (err) {
         console.error('[Sync] Auto-init failed:', err);
+      } finally {
+        // Whether download succeeded or failed, mark data as ready
+        // so the app doesn't stay stuck showing empty screens.
+        setDataReady(true);
       }
     };
 
@@ -259,6 +289,9 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       // ── Phase 2: Download cloud → local ───────────────────────────
       await SyncService.downloadAllData();
+
+      // Bump syncVersion so hooks re-read after manual sync
+      setSyncVersion((v) => v + 1);
 
       const now = Date.now();
       if (totalFailed === 0) {
@@ -379,6 +412,8 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         dismissNotification,
         triggerSync,
         retryFailed,
+        syncVersion,
+        dataReady,
       }}
     >
       {children}

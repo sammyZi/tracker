@@ -58,6 +58,37 @@ class StorageService {
   /** When true, notifySync() is suppressed (used during bulk import/download). */
   private _syncSuppressed = false;
 
+  // ── Per-key write locks to prevent concurrent read-modify-write races ───
+  //
+  // Without this, two concurrent `saveActivity` calls would both read the
+  // same list, each add their item, and then write back — the second write
+  // overwrites the first's addition, silently losing data.
+
+  private _locks: Map<string, Promise<void>> = new Map();
+
+  /**
+   * Acquire a per-key lock. Only one write to a given key can proceed at
+   * a time; concurrent callers wait for the previous write to finish.
+   */
+  private async acquireLock(key: string): Promise<() => void> {
+    // Wait for any existing lock on this key to release
+    while (this._locks.has(key)) {
+      await this._locks.get(key);
+    }
+
+    // Create a new lock for this key
+    let releaseLock!: () => void;
+    const lockPromise = new Promise<void>((resolve) => {
+      releaseLock = resolve;
+    });
+    this._locks.set(key, lockPromise);
+
+    return () => {
+      this._locks.delete(key);
+      releaseLock();
+    };
+  }
+
   // ==================== App Initialization ====================
 
   /**
@@ -175,6 +206,7 @@ class StorageService {
    * Save an activity to local storage
    */
   async saveActivity(activity: Activity): Promise<void> {
+    const unlock = await this.acquireLock(STORAGE_KEYS.ACTIVITIES);
     try {
       // Single read of the activity list
       const activitiesJson = await AsyncStorage.getItem(STORAGE_KEYS.ACTIVITIES);
@@ -204,6 +236,41 @@ class StorageService {
     } catch (error) {
       console.error('Error saving activity:', error);
       throw new Error('Failed to save activity');
+    } finally {
+      unlock();
+    }
+  }
+
+  /**
+   * Save multiple activities at once (batch). Used by cloud download to
+   * avoid N sequential lock-acquire cycles.
+   * This is more efficient than calling saveActivity N times.
+   */
+  async saveManyActivities(activities: Activity[]): Promise<void> {
+    if (activities.length === 0) return;
+    const unlock = await this.acquireLock(STORAGE_KEYS.ACTIVITIES);
+    try {
+      const activitiesJson = await AsyncStorage.getItem(STORAGE_KEYS.ACTIVITIES);
+      const existingActivities: Activity[] = activitiesJson ? JSON.parse(activitiesJson) : [];
+      const existingMap = new Map(existingActivities.map(a => [a.id, a]));
+
+      // Merge all incoming activities into the map
+      for (const activity of activities) {
+        existingMap.set(activity.id, activity);
+        // Also save individual activity key
+        const activityKey = `${STORAGE_KEYS.ACTIVITY_PREFIX}${activity.id}`;
+        await AsyncStorage.setItem(activityKey, JSON.stringify(activity));
+      }
+
+      // Rebuild sorted list from merged map
+      const mergedList = Array.from(existingMap.values());
+      mergedList.sort((a, b) => b.startTime - a.startTime);
+      await AsyncStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(mergedList));
+    } catch (error) {
+      console.error('Error saving many activities:', error);
+      throw new Error('Failed to save activities batch');
+    } finally {
+      unlock();
     }
   }
 
@@ -256,6 +323,7 @@ class StorageService {
    * Delete an activity
    */
   async deleteActivity(activityId: string): Promise<void> {
+    const unlock = await this.acquireLock(STORAGE_KEYS.ACTIVITIES);
     try {
       // Remove individual activity file
       const activityKey = `${STORAGE_KEYS.ACTIVITY_PREFIX}${activityId}`;
@@ -273,6 +341,8 @@ class StorageService {
     } catch (error) {
       console.error('Error deleting activity:', error);
       throw new Error('Failed to delete activity');
+    } finally {
+      unlock();
     }
   }
 
@@ -359,6 +429,7 @@ class StorageService {
    * Save a goal
    */
   async saveGoal(goal: Goal): Promise<void> {
+    const unlock = await this.acquireLock(STORAGE_KEYS.GOALS);
     try {
       const goals = await this.getGoals();
       const existingIndex = goals.findIndex(g => g.id === goal.id);
@@ -377,6 +448,33 @@ class StorageService {
     } catch (error) {
       console.error('Error saving goal:', error);
       throw new Error('Failed to save goal');
+    } finally {
+      unlock();
+    }
+  }
+
+  /**
+   * Save multiple goals at once (batch). Used by cloud download.
+   */
+  async saveManyGoals(goals: Goal[]): Promise<void> {
+    if (goals.length === 0) return;
+    const unlock = await this.acquireLock(STORAGE_KEYS.GOALS);
+    try {
+      const goalsJson = await AsyncStorage.getItem(STORAGE_KEYS.GOALS);
+      const existingGoals: Goal[] = goalsJson ? JSON.parse(goalsJson) : [];
+      const existingMap = new Map(existingGoals.map(g => [g.id, g]));
+
+      for (const goal of goals) {
+        existingMap.set(goal.id, goal);
+      }
+
+      const mergedList = Array.from(existingMap.values());
+      await AsyncStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(mergedList));
+    } catch (error) {
+      console.error('Error saving many goals:', error);
+      throw new Error('Failed to save goals batch');
+    } finally {
+      unlock();
     }
   }
 
@@ -397,6 +495,7 @@ class StorageService {
    * Update a goal
    */
   async updateGoal(goalId: string, updates: Partial<Goal>): Promise<void> {
+    const unlock = await this.acquireLock(STORAGE_KEYS.GOALS);
     try {
       const goals = await this.getGoals();
       const goalIndex = goals.findIndex(g => g.id === goalId);
@@ -413,6 +512,8 @@ class StorageService {
     } catch (error) {
       console.error('Error updating goal:', error);
       throw new Error('Failed to update goal');
+    } finally {
+      unlock();
     }
   }
 
@@ -420,6 +521,7 @@ class StorageService {
    * Delete a goal
    */
   async deleteGoal(goalId: string): Promise<void> {
+    const unlock = await this.acquireLock(STORAGE_KEYS.GOALS);
     try {
       const goals = await this.getGoals();
       const filteredGoals = goals.filter(g => g.id !== goalId);
@@ -430,6 +532,8 @@ class StorageService {
     } catch (error) {
       console.error('Error deleting goal:', error);
       throw new Error('Failed to delete goal');
+    } finally {
+      unlock();
     }
   }
 
@@ -598,18 +702,14 @@ class StorageService {
           await this.saveSettings(data.settings);
         }
 
-        // Import activities
+        // Import activities (batch save to avoid race conditions)
         if (data.activities && Array.isArray(data.activities)) {
-          for (const activity of data.activities) {
-            await this.saveActivity(activity);
-          }
+          await this.saveManyActivities(data.activities);
         }
 
-        // Import goals
+        // Import goals (batch save to avoid race conditions)
         if (data.goals && Array.isArray(data.goals)) {
-          for (const goal of data.goals) {
-            await this.saveGoal(goal);
-          }
+          await this.saveManyGoals(data.goals);
         }
       } finally {
         this.resumeSync();
@@ -633,7 +733,14 @@ class StorageService {
         await AsyncStorage.multiRemove(appKeys);
       }
       
-      console.log('All data cleared');
+      // Reset in-memory state so the service doesn't hold stale references
+      this._storageMode = 'local-only';
+      this._userId = null;
+      this._syncCallback = null;
+      this._syncSuppressed = false;
+      this._locks.clear();
+      
+      console.log('All data cleared (storage + in-memory state)');
     } catch (error) {
       console.error('Error clearing all data:', error);
       throw new Error('Failed to clear all data');

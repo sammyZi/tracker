@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import StorageService from '../services/storage/StorageService';
 import { Activity, ActivityType, ActivityFilters } from '../types';
+import { useSync } from '../context';
 
 interface UseActivityHistoryOptions {
   itemsPerPage?: number;
@@ -31,6 +32,7 @@ export const useActivityHistory = (
   options: UseActivityHistoryOptions = {}
 ): UseActivityHistoryReturn => {
   const { itemsPerPage = 20, autoLoad = true } = options;
+  const { syncVersion } = useSync();
 
   const [allActivities, setAllActivities] = useState<Activity[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -124,12 +126,12 @@ export const useActivityHistory = (
     await loadActivities(true);
   }, [loadActivities]);
 
-  // Load activities when filters change
+  // Load activities when filters change or when cloud data is downloaded
   useEffect(() => {
     if (autoLoad) {
       loadActivities(true);
     }
-  }, [dateRangeFilter, activityTypeFilter]);
+  }, [dateRangeFilter, activityTypeFilter, syncVersion]);
 
   // Load more when page changes
   useEffect(() => {

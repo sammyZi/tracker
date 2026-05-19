@@ -258,7 +258,7 @@ export const AccountSettingsScreen: React.FC<{ navigation: any }> = ({ navigatio
   const handleLogout = useCallback(() => {
     showConfirm(
       'Log Out',
-      'Are you sure you want to log out? Your local data will be preserved.',
+      'Are you sure you want to log out? Your data is safely backed up in the cloud.',
       [
         { text: 'Cancel', onPress: hideModal, style: 'cancel' },
         {
@@ -268,6 +268,12 @@ export const AccountSettingsScreen: React.FC<{ navigation: any }> = ({ navigatio
             setIsLoggingOut(true);
             try {
               await SyncService.shutdown();
+
+              // Clear all local user data so stale data doesn't persist
+              // across user sessions. Cloud data is safe and will be
+              // re-downloaded on next login.
+              await StorageService.clearAllData();
+
               await signOut();
               hideModal();
             } catch {
@@ -455,8 +461,8 @@ export const AccountSettingsScreen: React.FC<{ navigation: any }> = ({ navigatio
         <View style={styles.infoFooter}>
           <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
           <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            Your local data is always preserved, even if you disable cloud sync or log out.
-            Enabling cloud sync allows you to access your data across multiple devices.
+          Your data is safely stored in the cloud when sync is enabled.
+            Logging out clears local data, but it will be restored automatically on your next login.
           </Text>
         </View>
 

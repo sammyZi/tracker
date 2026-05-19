@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import StorageService from '../services/storage/StorageService';
 import { Statistics, StatsPeriod } from '../types';
+import { useSync } from '../context';
 
 interface UseStatisticsReturn {
   stats: Statistics | null;
@@ -15,6 +16,7 @@ interface UseStatisticsReturn {
 }
 
 export const useStatistics = (period: StatsPeriod): UseStatisticsReturn => {
+  const { syncVersion } = useSync();
   const [stats, setStats] = useState<Statistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -37,9 +39,10 @@ export const useStatistics = (period: StatsPeriod): UseStatisticsReturn => {
     await loadStatistics();
   }, [loadStatistics]);
 
+  // Load stats when period changes or when cloud data is downloaded
   useEffect(() => {
     loadStatistics();
-  }, [loadStatistics]);
+  }, [loadStatistics, syncVersion]);
 
   return {
     stats,
