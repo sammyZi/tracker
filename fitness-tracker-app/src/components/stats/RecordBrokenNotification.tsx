@@ -7,7 +7,8 @@ import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../common/Text';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Spacing, BorderRadius } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 
 interface RecordBrokenNotificationProps {
   recordType: 'distance' | 'pace' | 'duration' | 'steps';
@@ -30,19 +31,21 @@ const RECORD_ICONS = {
   steps: 'walk' as const,
 };
 
-const RECORD_COLORS = {
-  distance: Colors.primary,
-  pace: Colors.success,
-  duration: Colors.info,
-  steps: Colors.warning,
-};
-
 export const RecordBrokenNotification: React.FC<RecordBrokenNotificationProps> = ({
   recordType,
   value,
   visible,
   onDismiss,
 }) => {
+  const { colors } = useTheme();
+
+  const RECORD_COLORS = {
+    distance: colors.primary,
+    pace: colors.success,
+    duration: colors.info,
+    steps: colors.warning,
+  };
+
   const slideAnim = useRef(new Animated.Value(-100)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -116,10 +119,10 @@ export const RecordBrokenNotification: React.FC<RecordBrokenNotificationProps> =
         },
       ]}
     >
-      <View style={[styles.notification, { borderLeftColor: color }]}>
+      <View style={[styles.notification, { backgroundColor: colors.surface, borderLeftColor: color }]}>
         <View style={styles.iconContainer}>
-          <View style={[styles.trophyBackground, { backgroundColor: `${Colors.warning}20` }]}>
-            <Ionicons name="trophy" size={24} color={Colors.warning} />
+          <View style={[styles.trophyBackground, { backgroundColor: `${colors.warning}20` }]}>
+            <Ionicons name="trophy" size={24} color={colors.warning} />
           </View>
         </View>
 
@@ -154,7 +157,6 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   notification: {
-    backgroundColor: Colors.surface,
     borderRadius: BorderRadius.large,
     padding: Spacing.lg,
     flexDirection: 'row',

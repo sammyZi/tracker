@@ -15,7 +15,8 @@ import {
   formatPace,
   formatDate,
 } from '../../utils/formatting';
-import { Colors, Spacing, BorderRadius, Typography } from '../../constants/theme';
+import { Spacing, BorderRadius, Typography } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 
 interface ActivitySummaryCardProps {
   activity: Activity;
@@ -28,18 +29,20 @@ export const ActivitySummaryCard: React.FC<ActivitySummaryCardProps> = ({
   units,
   style,
 }) => {
+  const { colors } = useTheme();
+
   const getActivityIcon = () => {
     return 'fitness';
   };
 
   const getActivityColor = () => {
-    return Colors.primary;
+    return colors.primary;
   };
 
   const activityType = activity.type.charAt(0).toUpperCase() + activity.type.slice(1);
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, { backgroundColor: colors.surface }, style]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={[styles.iconContainer, { backgroundColor: getActivityColor() + '20' }]}>
@@ -50,10 +53,10 @@ export const ActivitySummaryCard: React.FC<ActivitySummaryCardProps> = ({
           />
         </View>
         <View style={styles.headerText}>
-          <Text variant="large" weight="bold" color={Colors.textPrimary}>
+          <Text variant="large" weight="bold" color={colors.textPrimary}>
             {activityType}
           </Text>
-          <Text variant="small" color={Colors.textSecondary}>
+          <Text variant="small" color={colors.textSecondary}>
             {formatDate(activity.startTime, 'long')}
           </Text>
         </View>
@@ -61,40 +64,40 @@ export const ActivitySummaryCard: React.FC<ActivitySummaryCardProps> = ({
 
       {/* Main Metrics */}
       <View style={styles.metricsContainer}>
-        <View style={styles.primaryMetric}>
+        <View style={[styles.primaryMetric, { borderBottomColor: colors.border }]}>
           <Text variant="extraLarge" weight="bold" color={getActivityColor()}>
             {formatDistance(activity.distance, units, 2).split(' ')[0]}
           </Text>
-          <Text variant="regular" color={Colors.textSecondary}>
+          <Text variant="regular" color={colors.textSecondary}>
             {formatDistance(activity.distance, units, 2).split(' ')[1]}
           </Text>
         </View>
 
         <View style={styles.secondaryMetrics}>
           <View style={styles.metricRow}>
-            <Ionicons name="time" size={20} color={Colors.textSecondary} />
-            <Text variant="regular" color={Colors.textPrimary}>
+            <Ionicons name="time" size={20} color={colors.textSecondary} />
+            <Text variant="regular" color={colors.textPrimary}>
               {formatDuration(activity.duration)}
             </Text>
           </View>
 
           <View style={styles.metricRow}>
-            <Ionicons name="speedometer" size={20} color={Colors.textSecondary} />
-            <Text variant="regular" color={Colors.textPrimary}>
+            <Ionicons name="speedometer" size={20} color={colors.textSecondary} />
+            <Text variant="regular" color={colors.textPrimary}>
               {formatPace(activity.averagePace, units)}
             </Text>
           </View>
 
           <View style={styles.metricRow}>
-            <Ionicons name="footsteps" size={20} color={Colors.textSecondary} />
-            <Text variant="regular" color={Colors.textPrimary}>
+            <Ionicons name="footsteps" size={20} color={colors.textSecondary} />
+            <Text variant="regular" color={colors.textPrimary}>
               {activity.steps.toLocaleString()} steps
             </Text>
           </View>
 
           <View style={styles.metricRow}>
-            <Ionicons name="flame" size={20} color={Colors.textSecondary} />
-            <Text variant="regular" color={Colors.textPrimary}>
+            <Ionicons name="flame" size={20} color={colors.textSecondary} />
+            <Text variant="regular" color={colors.textPrimary}>
               {Math.round(activity.calories)} cal
             </Text>
           </View>
@@ -102,8 +105,8 @@ export const ActivitySummaryCard: React.FC<ActivitySummaryCardProps> = ({
       </View>
 
       {/* Footer */}
-      <View style={styles.footer}>
-        <Text variant="small" color={Colors.textSecondary}>
+      <View style={[styles.footer, { borderTopColor: colors.border }]}>
+        <Text variant="small" color={colors.textSecondary}>
           Tracked with Stride 💪
         </Text>
       </View>
@@ -113,7 +116,6 @@ export const ActivitySummaryCard: React.FC<ActivitySummaryCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.surface,
     borderRadius: BorderRadius.large,
     padding: Spacing.xl,
     shadowColor: '#000',
@@ -145,7 +147,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.xl,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
     marginBottom: Spacing.lg,
   },
   secondaryMetrics: {
@@ -160,6 +161,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: Spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
   },
 });

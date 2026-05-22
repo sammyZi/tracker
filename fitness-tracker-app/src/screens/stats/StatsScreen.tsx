@@ -24,7 +24,8 @@ import { useGoals } from '../../hooks/useGoals';
 import { useSettings } from '../../context';
 import { useNavigation } from '@react-navigation/native';
 import { StatsPeriod } from '../../types';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { LightColors, Spacing, BorderRadius } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 import {
   formatDistance,
   formatDuration,
@@ -41,6 +42,8 @@ const TABS: { key: TabType; label: string }[] = [
 ];
 
 export const StatsScreen: React.FC = () => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [activeTab, setActiveTab] = useState<TabType>('week');
   const { settings } = useSettings();
   const units = settings.units;
@@ -76,7 +79,7 @@ export const StatsScreen: React.FC = () => {
           <Text
             variant="medium"
             weight={activeTab === tab.key ? 'semiBold' : 'regular'}
-            color={activeTab === tab.key ? Colors.primary : Colors.textSecondary}
+            color={activeTab === tab.key ? colors.primary : colors.textSecondary}
           >
             {tab.label}
           </Text>
@@ -94,19 +97,19 @@ export const StatsScreen: React.FC = () => {
           icon="map"
           label="Total Distance"
           value={formatDistance(stats.totalDistance, units)}
-          color={Colors.primary}
+          color={colors.primary}
         />
         <StatCard
           icon="time"
           label="Total Time"
           value={formatDuration(stats.totalDuration)}
-          color={Colors.success}
+          color={colors.success}
         />
         <StatCard
           icon="fitness"
           label="Activities"
           value={stats.totalActivities.toString()}
-          color={Colors.info}
+          color={colors.info}
         />
         <StatCard
           icon="speedometer"
@@ -116,19 +119,19 @@ export const StatsScreen: React.FC = () => {
               ? formatPace(stats.averagePace, units)
               : '--:-- /km'
           }
-          color={Colors.warning}
+          color={colors.warning}
         />
         <StatCard
           icon="walk"
           label="Total Steps"
           value={stats.totalSteps.toLocaleString()}
-          color={Colors.primary}
+          color={colors.primary}
         />
         <StatCard
           icon="flame"
           label="Calories"
           value={formatCalories(stats.totalCalories)}
-          color={Colors.error}
+          color={colors.error}
         />
       </View>
     );
@@ -205,7 +208,7 @@ export const StatsScreen: React.FC = () => {
         </Text>
         <View style={styles.comparisonGrid}>
           <View style={styles.comparisonItem}>
-            <Text variant="small" color={Colors.textSecondary}>
+            <Text variant="small" color={colors.textSecondary}>
               Per Activity
             </Text>
             <Text variant="large" weight="semiBold" style={styles.comparisonValue}>
@@ -213,7 +216,7 @@ export const StatsScreen: React.FC = () => {
             </Text>
           </View>
           <View style={styles.comparisonItem}>
-            <Text variant="small" color={Colors.textSecondary}>
+            <Text variant="small" color={colors.textSecondary}>
               Duration
             </Text>
             <Text variant="large" weight="semiBold" style={styles.comparisonValue}>
@@ -230,7 +233,7 @@ export const StatsScreen: React.FC = () => {
       <Text variant="large" weight="semiBold" style={styles.emptyTitle}>
         No Data Yet
       </Text>
-      <Text variant="medium" color={Colors.textSecondary} align="center" style={styles.emptyText}>
+      <Text variant="medium" color={colors.textSecondary} align="center" style={styles.emptyText}>
         Start tracking activities to see your statistics and progress!
       </Text>
     </View>
@@ -245,7 +248,7 @@ export const StatsScreen: React.FC = () => {
           </Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -271,7 +274,7 @@ export const StatsScreen: React.FC = () => {
           <RefreshControl
             refreshing={loading}
             onRefresh={refresh}
-            tintColor={Colors.primary}
+            tintColor={colors.primary}
           />
         }
       >
@@ -291,20 +294,20 @@ export const StatsScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: typeof LightColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.background,
   },
   header: {
     height: 60,
     paddingHorizontal: Spacing.lg,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.background,
     justifyContent: 'center',
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.background,
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
     gap: Spacing.md,
@@ -315,13 +318,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     alignItems: 'center',
     borderRadius: BorderRadius.large,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
   },
   activeTab: {
-    backgroundColor: `${Colors.primary}15`,
-    borderColor: Colors.primary,
+    backgroundColor: `${colors.primary}15`,
+    borderColor: colors.primary,
   },
   scrollView: {
     flex: 1,
@@ -340,7 +343,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   chartContainer: {
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: BorderRadius.large,
     padding: Spacing.lg,
   },
@@ -354,7 +357,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   comparisonSection: {
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: BorderRadius.large,
     padding: Spacing.lg,
     marginBottom: Spacing.lg,
@@ -369,7 +372,7 @@ const styles = StyleSheet.create({
   comparisonItem: {
     flex: 1,
     padding: Spacing.lg,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.background,
     borderRadius: BorderRadius.medium,
   },
   comparisonValue: {

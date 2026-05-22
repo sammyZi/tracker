@@ -14,7 +14,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from './Text';
-import { Colors, Spacing, BorderRadius, Shadows, Typography } from '../../constants/theme';
+import { Spacing, BorderRadius, Shadows, Typography } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 
 export interface ShareOption {
   id: string;
@@ -41,6 +42,8 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   loading = false,
   loadingMessage = 'Processing...',
 }) => {
+  const { colors } = useTheme();
+
   return (
     <Modal
       visible={visible}
@@ -51,10 +54,10 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
-            <View style={styles.modalContainer}>
+            <View style={[styles.modalContainer, { backgroundColor: colors.surface }]}>
               {/* Header */}
-              <View style={styles.header}>
-                <Text variant="mediumLarge" weight="semiBold" color={Colors.textPrimary}>
+              <View style={[styles.header, { borderBottomColor: colors.border }]}>
+                <Text variant="mediumLarge" weight="semiBold" color={colors.textPrimary}>
                   {title}
                 </Text>
                 <TouchableOpacity
@@ -62,7 +65,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                   onPress={onClose}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Ionicons name="close" size={24} color={Colors.textSecondary} />
+                  <Ionicons name="close" size={24} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
 
@@ -70,11 +73,11 @@ export const ShareModal: React.FC<ShareModalProps> = ({
               <View style={styles.optionsContainer}>
                 {loading ? (
                   <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={Colors.primary} />
-                    <Text variant="regular" color={Colors.textPrimary} weight="medium" style={styles.loadingText}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                    <Text variant="regular" color={colors.textPrimary} weight="medium" style={styles.loadingText}>
                       {loadingMessage}
                     </Text>
-                    <Text variant="small" color={Colors.textSecondary} style={styles.loadingSubtext}>
+                    <Text variant="small" color={colors.textSecondary} style={styles.loadingSubtext}>
                       This may take a few seconds...
                     </Text>
                   </View>
@@ -82,7 +85,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                   options.map((option) => (
                     <TouchableOpacity
                       key={option.id}
-                      style={styles.option}
+                      style={[styles.option, { backgroundColor: colors.background }]}
                       onPress={() => {
                         option.onPress();
                         onClose();
@@ -92,22 +95,22 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                       <View
                         style={[
                           styles.optionIcon,
-                          { backgroundColor: (option.color || Colors.primary) + '15' },
+                          { backgroundColor: (option.color || colors.primary) + '15' },
                         ]}
                       >
                         <Ionicons
                           name={option.icon}
                           size={24}
-                          color={option.color || Colors.primary}
+                          color={option.color || colors.primary}
                         />
                       </View>
-                      <Text variant="regular" weight="medium" color={Colors.textPrimary}>
+                      <Text variant="regular" weight="medium" color={colors.textPrimary}>
                         {option.label}
                       </Text>
                       <Ionicons
                         name="chevron-forward"
                         size={20}
-                        color={Colors.textSecondary}
+                        color={colors.textSecondary}
                         style={styles.chevron}
                       />
                     </TouchableOpacity>
@@ -117,8 +120,8 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
               {/* Cancel Button */}
               {!loading && (
-                <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-                  <Text variant="regular" weight="semiBold" color={Colors.textSecondary}>
+                <TouchableOpacity style={[styles.cancelButton, { backgroundColor: colors.background }]} onPress={onClose}>
+                  <Text variant="regular" weight="semiBold" color={colors.textSecondary}>
                     Cancel
                   </Text>
                 </TouchableOpacity>
@@ -138,7 +141,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContainer: {
-    backgroundColor: Colors.surface,
     borderTopLeftRadius: BorderRadius.extraLarge,
     borderTopRightRadius: BorderRadius.extraLarge,
     paddingBottom: Spacing.xl,
@@ -152,7 +154,6 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.xl,
     paddingBottom: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   closeButton: {
     width: 32,
@@ -171,7 +172,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     borderRadius: BorderRadius.medium,
     marginBottom: Spacing.sm,
-    backgroundColor: Colors.background,
   },
   optionIcon: {
     width: 48,
@@ -200,6 +200,5 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.lg,
     alignItems: 'center',
     borderRadius: BorderRadius.medium,
-    backgroundColor: Colors.background,
   },
 });

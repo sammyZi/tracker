@@ -9,7 +9,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../common/Text';
 import { Button } from '../common/Button';
 import { Goal } from '../../types';
-import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 import GoalsService from '../../services/goals/GoalsService';
 
 interface GoalAchievedNotificationProps {
@@ -23,6 +24,7 @@ export const GoalAchievedNotification: React.FC<GoalAchievedNotificationProps> =
   units,
   onClose,
 }) => {
+  const { colors } = useTheme();
   const scaleAnim = new Animated.Value(0);
 
   useEffect(() => {
@@ -62,17 +64,18 @@ export const GoalAchievedNotification: React.FC<GoalAchievedNotificationProps> =
         <Animated.View
           style={[
             styles.container,
+            { backgroundColor: colors.surface },
             {
               transform: [{ scale: scaleAnim }],
             },
           ]}
         >
           <View style={styles.iconContainer}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="trophy" size={48} color={Colors.warning} />
+            <View style={[styles.iconCircle, { backgroundColor: `${colors.warning}20` }]}>
+              <Ionicons name="trophy" size={48} color={colors.warning} />
             </View>
-            <View style={styles.checkBadge}>
-              <Ionicons name="checkmark-circle" size={32} color={Colors.success} />
+            <View style={[styles.checkBadge, { backgroundColor: colors.surface }]}>
+              <Ionicons name="checkmark-circle" size={32} color={colors.success} />
             </View>
           </View>
 
@@ -80,24 +83,24 @@ export const GoalAchievedNotification: React.FC<GoalAchievedNotificationProps> =
             Goal Achieved! 🎉
           </Text>
 
-          <Text variant="medium" color={Colors.textSecondary} align="center" style={styles.subtitle}>
+          <Text variant="medium" color={colors.textSecondary} align="center" style={styles.subtitle}>
             Congratulations! You've completed your {getGoalTypeLabel().toLowerCase()}
           </Text>
 
-          <View style={styles.goalDetails}>
+          <View style={[styles.goalDetails, { backgroundColor: colors.background }]}>
             <View style={styles.detailRow}>
-              <Text variant="small" color={Colors.textSecondary}>
+              <Text variant="small" color={colors.textSecondary}>
                 Target
               </Text>
-              <Text variant="medium" weight="semiBold" color={Colors.textPrimary}>
+              <Text variant="medium" weight="semiBold" color={colors.textPrimary}>
                 {GoalsService.formatGoalTarget(goal, units)}
               </Text>
             </View>
             <View style={styles.detailRow}>
-              <Text variant="small" color={Colors.textSecondary}>
+              <Text variant="small" color={colors.textSecondary}>
                 Period
               </Text>
-              <Text variant="medium" weight="semiBold" color={Colors.textPrimary}>
+              <Text variant="medium" weight="semiBold" color={colors.textPrimary}>
                 {goal.period === 'weekly' ? 'Weekly' : 'Monthly'}
               </Text>
             </View>
@@ -124,7 +127,6 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
   },
   container: {
-    backgroundColor: Colors.surface,
     borderRadius: BorderRadius.extraLarge,
     padding: Spacing.xxl,
     width: '100%',
@@ -140,7 +142,6 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: `${Colors.warning}20`,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -148,7 +149,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: -8,
     right: -8,
-    backgroundColor: Colors.surface,
     borderRadius: 16,
   },
   title: {
@@ -160,7 +160,6 @@ const styles = StyleSheet.create({
   },
   goalDetails: {
     width: '100%',
-    backgroundColor: Colors.background,
     borderRadius: BorderRadius.medium,
     padding: Spacing.lg,
     marginBottom: Spacing.xl,

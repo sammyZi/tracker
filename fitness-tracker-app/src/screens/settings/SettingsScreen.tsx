@@ -20,7 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../../components/common';
 import { SyncStatusIndicator } from '../../components/sync';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Spacing, BorderRadius } from '../../constants/theme';
 import { useSettings } from '../../context';
 import { useTheme } from '../../hooks';
 import { UnitSystem } from '../../types';
@@ -138,6 +138,7 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
     setAnnouncementInterval,
     setUnits,
     setMapType,
+    setTheme,
     updateSettings,
     toggleHapticFeedback,
     isHapticEnabled,
@@ -182,6 +183,34 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             right={<Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />}
             onPress={() => navigation.navigate('AccountSettings')}
             isLast
+          />
+        </Section>
+
+        {/* ── Appearance ────────────────────────────────────────────────── */}
+        <Section title="Appearance" colors={colors}>
+          <SettingRow
+            icon="color-palette-outline"
+            iconBg={colors.primary}
+            label="Theme"
+            description={
+              settings.theme === 'light'
+                ? 'Light Theme'
+                : settings.theme === 'dark'
+                ? 'Dark Theme'
+                : 'Follow System'
+            }
+            colors={colors}
+            isLast
+          />
+          <PillSelector
+            options={[
+              { label: 'Light', value: 'light' },
+              { label: 'Dark', value: 'dark' },
+              { label: 'Auto', value: 'auto' },
+            ]}
+            selected={settings.theme}
+            onSelect={setTheme}
+            colors={colors}
           />
         </Section>
 

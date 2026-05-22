@@ -9,7 +9,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../common/Text';
 import { Card } from '../common/Card';
 import { Goal } from '../../types';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Spacing, BorderRadius } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 import GoalsService from '../../services/goals/GoalsService';
 
 interface GoalsDashboardProps {
@@ -23,6 +24,8 @@ export const GoalsDashboard: React.FC<GoalsDashboardProps> = ({
   units,
   onViewAll,
 }) => {
+  const { colors } = useTheme();
+
   if (goals.length === 0) {
     return null;
   }
@@ -41,24 +44,24 @@ export const GoalsDashboard: React.FC<GoalsDashboardProps> = ({
   };
 
   const getGoalColor = (goal: Goal): string => {
-    if (goal.achieved) return Colors.success;
+    if (goal.achieved) return colors.success;
     const progress = GoalsService.getProgressPercentage(goal);
-    if (progress >= 75) return Colors.warning;
-    return Colors.primary;
+    if (progress >= 75) return colors.warning;
+    return colors.primary;
   };
 
   return (
     <Card style={styles.container}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Ionicons name="flag" size={20} color={Colors.primary} />
+          <Ionicons name="flag" size={20} color={colors.primary} />
           <Text variant="mediumLarge" weight="semiBold">
             Active Goals
           </Text>
         </View>
         {onViewAll && (
           <TouchableOpacity onPress={onViewAll}>
-            <Text variant="small" weight="medium" color={Colors.primary}>
+            <Text variant="small" weight="medium" color={colors.primary}>
               View All
             </Text>
           </TouchableOpacity>
@@ -77,15 +80,15 @@ export const GoalsDashboard: React.FC<GoalsDashboardProps> = ({
                   <Ionicons name={getGoalIcon(goal.type)} size={16} color={color} />
                 </View>
                 <View style={styles.goalInfo}>
-                  <Text variant="small" weight="medium" color={Colors.textPrimary}>
+                  <Text variant="small" weight="medium" color={colors.textPrimary}>
                     {GoalsService.formatGoalTarget(goal, units)}
                   </Text>
-                  <Text variant="extraSmall" color={Colors.textSecondary}>
+                  <Text variant="extraSmall" color={colors.textSecondary}>
                     {goal.period === 'weekly' ? 'This Week' : 'This Month'}
                   </Text>
                 </View>
                 {goal.achieved && (
-                  <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
+                  <Ionicons name="checkmark-circle" size={20} color={colors.success} />
                 )}
               </View>
 
@@ -111,7 +114,7 @@ export const GoalsDashboard: React.FC<GoalsDashboardProps> = ({
       </View>
 
       {goals.length > 3 && (
-        <Text variant="extraSmall" color={Colors.textSecondary} align="center" style={styles.moreText}>
+        <Text variant="extraSmall" color={colors.textSecondary} align="center" style={styles.moreText}>
           +{goals.length - 3} more goals
         </Text>
       )}
@@ -159,7 +162,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    marginLeft: 40, // Align with text above icon
+    marginLeft: 40,
   },
   progressBackground: {
     flex: 1,

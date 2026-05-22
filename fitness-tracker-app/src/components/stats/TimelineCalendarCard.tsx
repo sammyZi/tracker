@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Card } from '../common/Card';
 import { Text } from '../common/Text';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Spacing, BorderRadius } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 import { Activity } from '../../types';
 
 interface TimelineCalendarCardProps {
@@ -10,6 +11,8 @@ interface TimelineCalendarCardProps {
 }
 
 export const TimelineCalendarCard: React.FC<TimelineCalendarCardProps> = ({ activities }) => {
+  const { colors } = useTheme();
+
   // Generate the last 14 days and check for activities
   const days = useMemo(() => {
     // Determine which dates have activities
@@ -46,7 +49,7 @@ export const TimelineCalendarCard: React.FC<TimelineCalendarCardProps> = ({ acti
   return (
     <Card variant="outlined" style={styles.card}>
       <View style={styles.header}>
-        <Text variant="mediumLarge" weight="semiBold" color={Colors.textPrimary}>
+        <Text variant="mediumLarge" weight="semiBold" color={colors.textPrimary}>
           Daily Timeline
         </Text>
       </View>
@@ -55,19 +58,13 @@ export const TimelineCalendarCard: React.FC<TimelineCalendarCardProps> = ({ acti
         horizontal 
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        // Scroll to the end (today) on load
-        onContentSizeChange={(w, h) => {
-           // We could use a ref to scrollToEnd, but React Native ScrollView 
-           // usually starts at the left. Users can scroll right to today.
-           // Setting inverted={false} and scrolling is tricky, so we'll just leave it default.
-        }}
       >
         {days.map((day, index) => {
           return (
             <View key={index} style={styles.dayColumn}>
               <Text 
                 variant="extraSmall" 
-                color={day.isToday ? Colors.primary : Colors.textSecondary}
+                color={day.isToday ? colors.primary : colors.textSecondary}
                 weight={day.isToday ? 'bold' : 'regular'}
                 style={styles.dayStr}
               >
@@ -76,11 +73,11 @@ export const TimelineCalendarCard: React.FC<TimelineCalendarCardProps> = ({ acti
               
               <View style={[
                 styles.dateCircle, 
-                day.isToday && styles.todayCircle
+                day.isToday && { backgroundColor: colors.primary }
               ]}>
                 <Text 
                   variant="medium" 
-                  color={day.isToday ? '#fff' : Colors.textPrimary}
+                  color={day.isToday ? '#fff' : colors.textPrimary}
                   weight={day.isToday ? 'bold' : 'medium'}
                 >
                   {day.dateNum}
@@ -89,7 +86,7 @@ export const TimelineCalendarCard: React.FC<TimelineCalendarCardProps> = ({ acti
 
               <View style={styles.indicatorContainer}>
                 {day.hasActivity && (
-                  <View style={styles.activityDot} />
+                  <View style={[styles.activityDot, { backgroundColor: colors.success }]} />
                 )}
               </View>
             </View>
@@ -131,9 +128,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 6,
   },
-  todayCircle: {
-    backgroundColor: Colors.primary,
-  },
   indicatorContainer: {
     height: 6,
     width: '100%',
@@ -143,6 +137,5 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: Colors.success, // Use success green for completed activity, or primary
   }
 });

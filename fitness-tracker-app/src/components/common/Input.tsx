@@ -12,7 +12,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Text } from './Text';
-import { Colors, BorderRadius, Layout, Spacing, Typography } from '../../constants/theme';
+import { BorderRadius, Layout, Spacing, Typography } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -37,8 +38,9 @@ export const Input: React.FC<InputProps> = ({
   onBlur,
   ...props
 }) => {
+  const { colors } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
-  const borderColor = useSharedValue(Colors.border);
+  const borderColor = useSharedValue(colors.border);
 
   const animatedBorderStyle = useAnimatedStyle(() => ({
     borderColor: borderColor.value,
@@ -46,7 +48,7 @@ export const Input: React.FC<InputProps> = ({
 
   const handleFocus = (e: any) => {
     setIsFocused(true);
-    borderColor.value = withTiming(error ? Colors.error : Colors.primary, {
+    borderColor.value = withTiming(error ? colors.error : colors.primary, {
       duration: 200,
     });
     onFocus?.(e);
@@ -54,7 +56,7 @@ export const Input: React.FC<InputProps> = ({
 
   const handleBlur = (e: any) => {
     setIsFocused(false);
-    borderColor.value = withTiming(error ? Colors.error : Colors.border, {
+    borderColor.value = withTiming(error ? colors.error : colors.border, {
       duration: 200,
     });
     onBlur?.(e);
@@ -66,7 +68,7 @@ export const Input: React.FC<InputProps> = ({
         <Text
           variant="small"
           weight="medium"
-          color={error ? Colors.error : Colors.textSecondary}
+          color={error ? colors.error : colors.textSecondary}
           style={styles.label}
         >
           {label}
@@ -76,8 +78,9 @@ export const Input: React.FC<InputProps> = ({
       <Animated.View
         style={[
           styles.inputContainer,
+          { borderColor: colors.border, backgroundColor: colors.surface },
           animatedBorderStyle,
-          error && styles.errorBorder,
+          error && { borderColor: colors.error },
         ]}
       >
         {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
@@ -85,11 +88,12 @@ export const Input: React.FC<InputProps> = ({
         <TextInput
           style={[
             styles.input,
+            { color: colors.textPrimary },
             leftIcon ? styles.inputWithLeftIcon : undefined,
             rightIcon ? styles.inputWithRightIcon : undefined,
             style,
           ]}
-          placeholderTextColor={Colors.textSecondary}
+          placeholderTextColor={colors.textSecondary}
           onFocus={handleFocus}
           onBlur={handleBlur}
           {...props}
@@ -109,7 +113,7 @@ export const Input: React.FC<InputProps> = ({
       {(error || helperText) && (
         <Text
           variant="extraSmall"
-          color={error ? Colors.error : Colors.textSecondary}
+          color={error ? colors.error : colors.textSecondary}
           style={styles.helperText}
         >
           {error || helperText}
@@ -132,18 +136,12 @@ const styles = StyleSheet.create({
     height: Layout.inputHeight,
     borderRadius: BorderRadius.medium,
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
     paddingHorizontal: Spacing.lg,
-  },
-  errorBorder: {
-    borderColor: Colors.error,
   },
   input: {
     flex: 1,
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.fontSize.regular,
-    color: Colors.textPrimary,
     padding: 0,
   },
   inputWithLeftIcon: {

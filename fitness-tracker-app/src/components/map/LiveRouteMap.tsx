@@ -3,7 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE, MapType as RNMapType } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { Location } from '../../types';
-import { Colors } from '../../constants/theme';
+import { Shadows } from '../../constants/theme';
+import { DarkMapStyle } from '../../constants/mapStyle';
+import { useTheme } from '../../hooks';
 import { useSettings } from '../../context';
 import locationService from '../../services/location';
 
@@ -18,6 +20,7 @@ export const LiveRouteMap: React.FC<LiveRouteMapProps> = ({
   routePoints,
   isTracking,
 }) => {
+  const { colors, isDark } = useTheme();
   const { settings } = useSettings();
   const mapRef = React.useRef<MapView>(null);
   const [hasInitialized, setHasInitialized] = React.useState(false);
@@ -112,6 +115,7 @@ export const LiveRouteMap: React.FC<LiveRouteMapProps> = ({
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
         mapType={getMapType()}
+        customMapStyle={isDark ? DarkMapStyle : undefined}
         style={styles.map}
         initialRegion={{
           latitude: currentLocation?.latitude || 18.4681966,
@@ -141,7 +145,7 @@ export const LiveRouteMap: React.FC<LiveRouteMapProps> = ({
         {coordinates.length > 1 && (
           <Polyline
             coordinates={coordinates}
-            strokeColor={Colors.primary}
+            strokeColor={colors.primary}
             strokeWidth={5}
             lineCap="round"
             lineJoin="round"
@@ -156,7 +160,7 @@ export const LiveRouteMap: React.FC<LiveRouteMapProps> = ({
               longitude: routePoints[0].longitude,
             }}
           >
-            <View style={styles.startMarker}>
+            <View style={[styles.startMarker, { backgroundColor: colors.success }]}>
               <Ionicons name="flag" size={16} color="#fff" />
             </View>
           </Marker>
@@ -165,11 +169,11 @@ export const LiveRouteMap: React.FC<LiveRouteMapProps> = ({
 
       {/* Location Button */}
       <TouchableOpacity 
-        style={styles.locationButton} 
+        style={[styles.locationButton, { backgroundColor: colors.surface }]} 
         onPress={centerOnLocation}
         activeOpacity={0.8}
       >
-        <Ionicons name="locate" size={22} color={Colors.primary} />
+        <Ionicons name="locate" size={22} color={colors.primary} />
       </TouchableOpacity>
 
       {/* GPS Info */}
@@ -196,7 +200,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 240,
     right: 16,
-    backgroundColor: '#fff',
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -226,7 +229,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.success,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,

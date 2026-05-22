@@ -7,7 +7,7 @@
  * - Quick stats summary
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -42,7 +42,7 @@ import { PersonalRecordsCard } from '../../components/stats/PersonalRecordsCard'
 import { useConfirmModal } from '../../hooks/useConfirmModal';
 import { useTheme } from '../../hooks';
 import { useStatistics } from '../../hooks/useStatistics';
-import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { LightColors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import StorageService from '../../services/storage/StorageService';
 import SyncService from '../../services/sync/SyncService';
 import { UserProfile, UserSettings, StatsPeriod, Activity } from '../../types';
@@ -61,6 +61,7 @@ export const ProfileScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('week');
   const { modalState, showConfirm, hideModal } = useConfirmModal();
   const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [allActivities, setAllActivities] = useState<Activity[]>([]);
@@ -202,7 +203,7 @@ export const ProfileScreen: React.FC = () => {
         'Error',
         'Failed to remove profile picture',
         [{ text: 'OK', onPress: hideModal, style: 'default' }],
-        { icon: 'alert-circle', iconColor: Colors.error }
+        { icon: 'alert-circle', iconColor: colors.error }
       );
     }
   };
@@ -218,7 +219,7 @@ export const ProfileScreen: React.FC = () => {
           'Permission Required',
           'Please grant camera roll permissions to change your profile picture.',
           [{ text: 'OK', onPress: hideModal, style: 'default' }],
-          { icon: 'camera', iconColor: Colors.primary }
+          { icon: 'camera', iconColor: colors.primary }
         );
         return;
       }
@@ -241,7 +242,7 @@ export const ProfileScreen: React.FC = () => {
         'Error',
         'Failed to pick profile picture',
         [{ text: 'OK', onPress: hideModal, style: 'default' }],
-        { icon: 'alert-circle', iconColor: Colors.error }
+        { icon: 'alert-circle', iconColor: colors.error }
       );
     }
   };
@@ -253,7 +254,7 @@ export const ProfileScreen: React.FC = () => {
           'Error',
           'Name cannot be empty',
           [{ text: 'OK', onPress: hideModal, style: 'default' }],
-          { icon: 'alert-circle', iconColor: Colors.error }
+          { icon: 'alert-circle', iconColor: colors.error }
         );
         return;
       }
@@ -266,7 +267,7 @@ export const ProfileScreen: React.FC = () => {
           'Error',
           'Please enter a valid weight (1-500 kg)',
           [{ text: 'OK', onPress: hideModal, style: 'default' }],
-          { icon: 'alert-circle', iconColor: Colors.error }
+          { icon: 'alert-circle', iconColor: colors.error }
         );
         return;
       }
@@ -276,7 +277,7 @@ export const ProfileScreen: React.FC = () => {
           'Error',
           'Please enter a valid height (1-300 cm)',
           [{ text: 'OK', onPress: hideModal, style: 'default' }],
-          { icon: 'alert-circle', iconColor: Colors.error }
+          { icon: 'alert-circle', iconColor: colors.error }
         );
         return;
       }
@@ -296,7 +297,7 @@ export const ProfileScreen: React.FC = () => {
         'Success',
         'Profile updated successfully',
         [{ text: 'OK', onPress: hideModal, style: 'default' }],
-        { icon: 'checkmark-circle', iconColor: Colors.success }
+        { icon: 'checkmark-circle', iconColor: colors.success }
       );
     } catch (error) {
       console.error('Error saving profile:', error);
@@ -304,7 +305,7 @@ export const ProfileScreen: React.FC = () => {
         'Error',
         'Failed to save profile',
         [{ text: 'OK', onPress: hideModal, style: 'default' }],
-        { icon: 'alert-circle', iconColor: Colors.error }
+        { icon: 'alert-circle', iconColor: colors.error }
       );
     }
   };
@@ -342,19 +343,19 @@ export const ProfileScreen: React.FC = () => {
           icon="map"
           label="Distance"
           value={formatDistance(stats.totalDistance, settings?.units || 'metric')}
-          color={Colors.primary}
+          color={colors.primary}
         />
         <StatCard
           icon="time"
           label="Time"
           value={formatDuration(stats.totalDuration)}
-          color={Colors.success}
+          color={colors.success}
         />
         <StatCard
           icon="fitness"
           label="Activities"
           value={stats.totalActivities.toString()}
-          color={Colors.info}
+          color={colors.info}
         />
         <StatCard
           icon="speedometer"
@@ -364,19 +365,19 @@ export const ProfileScreen: React.FC = () => {
               ? formatPace(stats.averagePace, settings?.units || 'metric')
               : '--:--'
           }
-          color={Colors.warning}
+          color={colors.warning}
         />
         <StatCard
           icon="walk"
           label="Steps"
           value={stats.totalSteps.toLocaleString()}
-          color={Colors.primary}
+          color={colors.primary}
         />
         <StatCard
           icon="flame"
           label="Calories"
           value={formatCalories(stats.totalCalories)}
-          color={Colors.error}
+          color={colors.error}
         />
       </View>
     );
@@ -514,7 +515,7 @@ export const ProfileScreen: React.FC = () => {
 
           {profile?.weight && (
             <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
-              <Ionicons name="scale-outline" size={18} color={Colors.success} />
+              <Ionicons name="scale-outline" size={18} color={colors.success} />
               <View style={styles.detailContent}>
                 <Text variant="extraSmall" color={colors.textSecondary}>Weight</Text>
                 <Text variant="regular" weight="medium" color={colors.textPrimary}>
@@ -526,7 +527,7 @@ export const ProfileScreen: React.FC = () => {
 
           {profile?.height && (
             <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
-              <Ionicons name="resize-outline" size={18} color={Colors.info} />
+              <Ionicons name="resize-outline" size={18} color={colors.info} />
               <View style={styles.detailContent}>
                 <Text variant="extraSmall" color={colors.textSecondary}>Height</Text>
                 <Text variant="regular" weight="medium" color={colors.textPrimary}>
@@ -562,17 +563,17 @@ export const ProfileScreen: React.FC = () => {
           <Animated.View style={[styles.modalContent, { transform: [{ translateY: editSlideAnim }] }]}>
             <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
-              <Text variant="medium" weight="bold" color={Colors.textPrimary}>
+              <Text variant="medium" weight="bold" color={colors.textPrimary}>
                 Edit Profile
               </Text>
               <TouchableOpacity onPress={closeEditModal}>
-                <Ionicons name="close" size={24} color={Colors.textSecondary} />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalForm} showsVerticalScrollIndicator={false}>
               <View style={styles.inputGroup}>
-                <Text variant="small" weight="medium" color={Colors.textSecondary}>
+                <Text variant="small" weight="medium" color={colors.textSecondary}>
                   Name *
                 </Text>
                 <TextInput
@@ -580,12 +581,12 @@ export const ProfileScreen: React.FC = () => {
                   value={editName}
                   onChangeText={setEditName}
                   placeholder="Enter your name"
-                  placeholderTextColor={Colors.disabled}
+                  placeholderTextColor={colors.disabled}
                 />
               </View>
 
               <View style={styles.inputGroup}>
-                <Text variant="small" weight="medium" color={Colors.textSecondary}>
+                <Text variant="small" weight="medium" color={colors.textSecondary}>
                   Weight (kg)
                 </Text>
                 <TextInput
@@ -593,13 +594,13 @@ export const ProfileScreen: React.FC = () => {
                   value={editWeight}
                   onChangeText={setEditWeight}
                   placeholder="Enter your weight"
-                  placeholderTextColor={Colors.disabled}
+                  placeholderTextColor={colors.disabled}
                   keyboardType="decimal-pad"
                 />
               </View>
 
               <View style={styles.inputGroup}>
-                <Text variant="small" weight="medium" color={Colors.textSecondary}>
+                <Text variant="small" weight="medium" color={colors.textSecondary}>
                   Height (cm)
                 </Text>
                 <TextInput
@@ -607,12 +608,12 @@ export const ProfileScreen: React.FC = () => {
                   value={editHeight}
                   onChangeText={setEditHeight}
                   placeholder="Enter your height"
-                  placeholderTextColor={Colors.disabled}
+                  placeholderTextColor={colors.disabled}
                   keyboardType="decimal-pad"
                 />
               </View>
 
-              <Text variant="extraSmall" color={Colors.textSecondary} style={styles.helpText}>
+              <Text variant="extraSmall" color={colors.textSecondary} style={styles.helpText}>
                 Weight and height are used for calorie calculations
               </Text>
             </ScrollView>
@@ -686,23 +687,23 @@ export const ProfileScreen: React.FC = () => {
                         setPendingImageUri(null);
                       }}
                     >
-                      <Ionicons name="close-outline" size={20} color={Colors.error} />
+                      <Ionicons name="close-outline" size={20} color={colors.error} />
                       <Text style={styles.imageViewerButtonTextDelete}>Cancel</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={[styles.imageViewerButton, { backgroundColor: Colors.success }]}
+                      style={[styles.imageViewerButton, { backgroundColor: colors.success }]}
                       onPress={async () => {
                         try {
-                          const updatedProfile: UserProfile = {
-                            ...profile!,
-                            profilePictureUri: pendingImageUri,
-                            updatedAt: Date.now(),
-                          };
-                          await StorageService.saveUserProfile(updatedProfile);
-                          setProfile(updatedProfile);
-                          setImageViewerVisible(false);
-                          setPendingImageUri(null);
+                           const updatedProfile: UserProfile = {
+                             ...profile!,
+                             profilePictureUri: pendingImageUri,
+                             updatedAt: Date.now(),
+                           };
+                           await StorageService.saveUserProfile(updatedProfile);
+                           setProfile(updatedProfile);
+                           setImageViewerVisible(false);
+                           setPendingImageUri(null);
                         } catch (error) {
                           console.error('Error saving new image:', error);
                         }
@@ -722,7 +723,7 @@ export const ProfileScreen: React.FC = () => {
                         setTimeout(handleRemoveImage, 350);
                       }}
                     >
-                      <Ionicons name="trash-outline" size={20} color={Colors.error} />
+                      <Ionicons name="trash-outline" size={20} color={colors.error} />
                       <Text style={styles.imageViewerButtonTextDelete}>Delete</Text>
                     </TouchableOpacity>
 
@@ -747,7 +748,7 @@ export const ProfileScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: typeof LightColors) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -827,7 +828,7 @@ const styles = StyleSheet.create({
   },
   sectionDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: Colors.border,
+    backgroundColor: colors.border,
     marginVertical: 16,
   },
 
@@ -894,7 +895,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderTopLeftRadius: BorderRadius.extraLarge,
     borderTopRightRadius: BorderRadius.extraLarge,
     maxHeight: '80%',
@@ -904,7 +905,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: Colors.border,
+    backgroundColor: colors.border,
     alignSelf: 'center',
     marginTop: 10,
     marginBottom: 4,
@@ -915,7 +916,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Spacing.xl,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: colors.border,
   },
   modalForm: {
     padding: Spacing.xl,
@@ -926,14 +927,14 @@ const styles = StyleSheet.create({
   input: {
     height: 48,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
     borderRadius: 12,
     paddingHorizontal: Spacing.lg,
     marginTop: Spacing.sm,
     fontSize: 14,
     fontFamily: 'Poppins_400Regular',
-    color: Colors.textPrimary,
-    backgroundColor: Colors.surface,
+    color: colors.textPrimary,
+    backgroundColor: colors.surface,
   },
   helpText: {
     marginTop: Spacing.sm,
@@ -944,7 +945,7 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
     gap: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: colors.border,
   },
   modalButton: {
     flex: 1,
@@ -994,7 +995,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   imageViewerButtonTextDelete: {
-    color: Colors.error,
+    color: colors.error,
     fontSize: 15,
     fontFamily: 'Poppins_500Medium',
   },

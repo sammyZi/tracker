@@ -21,7 +21,7 @@ import { useSettings } from '../../context';
 import { useConfirmModal } from '../../hooks/useConfirmModal';
 import { useTheme } from '../../hooks';
 import { Goal } from '../../types';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { LightColors, Spacing, BorderRadius } from '../../constants/theme';
 
 export const GoalsScreen: React.FC = () => {
   const { activeGoals, achievedGoals, loading, createGoal, updateGoal, deleteGoal, refresh } = useGoals();
@@ -43,7 +43,7 @@ export const GoalsScreen: React.FC = () => {
         'Success',
         'Goal created successfully!',
         [{ text: 'OK', onPress: hideModal, style: 'default' }],
-        { icon: 'checkmark-circle', iconColor: Colors.success }
+        { icon: 'checkmark-circle', iconColor: colors.success }
       );
     } catch (error) {
       console.error('Error creating goal:', error);
@@ -51,7 +51,7 @@ export const GoalsScreen: React.FC = () => {
         'Error',
         'Failed to create goal',
         [{ text: 'OK', onPress: hideModal, style: 'default' }],
-        { icon: 'alert-circle', iconColor: Colors.error }
+        { icon: 'alert-circle', iconColor: colors.error }
       );
     }
   };
@@ -70,7 +70,7 @@ export const GoalsScreen: React.FC = () => {
         'Success',
         'Goal updated successfully!',
         [{ text: 'OK', onPress: hideModal, style: 'default' }],
-        { icon: 'checkmark-circle', iconColor: Colors.success }
+        { icon: 'checkmark-circle', iconColor: colors.success }
       );
     } catch (error) {
       console.error('Error updating goal:', error);
@@ -78,7 +78,7 @@ export const GoalsScreen: React.FC = () => {
         'Error',
         'Failed to update goal',
         [{ text: 'OK', onPress: hideModal, style: 'default' }],
-        { icon: 'alert-circle', iconColor: Colors.error }
+        { icon: 'alert-circle', iconColor: colors.error }
       );
     }
   };
@@ -113,7 +113,7 @@ export const GoalsScreen: React.FC = () => {
           style: 'cancel',
         },
       ],
-      { icon: 'options', iconColor: Colors.primary }
+      { icon: 'options', iconColor: colors.primary }
     );
   };
 
@@ -138,7 +138,7 @@ export const GoalsScreen: React.FC = () => {
                   'Success',
                   'Goal deleted successfully',
                   [{ text: 'OK', onPress: hideModal, style: 'default' }],
-                  { icon: 'checkmark-circle', iconColor: Colors.success }
+                  { icon: 'checkmark-circle', iconColor: colors.success }
                 );
               }, 300);
             } catch (error) {
@@ -149,7 +149,7 @@ export const GoalsScreen: React.FC = () => {
                   'Error',
                   'Failed to delete goal',
                   [{ text: 'OK', onPress: hideModal, style: 'default' }],
-                  { icon: 'alert-circle', iconColor: Colors.error }
+                  { icon: 'alert-circle', iconColor: colors.error }
                 );
               }, 300);
             }
@@ -157,7 +157,7 @@ export const GoalsScreen: React.FC = () => {
           style: 'destructive',
         },
       ],
-      { icon: 'trash', iconColor: Colors.error }
+      { icon: 'trash', iconColor: colors.error }
     );
   };
 
@@ -171,8 +171,8 @@ export const GoalsScreen: React.FC = () => {
 
     const stats = [
       { label: 'Active', value: activeGoals.length, color: colors.primary, icon: 'flame' as const },
-      { label: 'Achieved', value: achievedGoals.length, color: Colors.success, icon: 'trophy' as const },
-      { label: 'Total', value: totalGoals, color: Colors.warning, icon: 'flag' as const },
+      { label: 'Achieved', value: achievedGoals.length, color: colors.success, icon: 'trophy' as const },
+      { label: 'Total', value: totalGoals, color: colors.warning, icon: 'flag' as const },
     ];
 
     return (
@@ -263,13 +263,13 @@ export const GoalsScreen: React.FC = () => {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleRow}>
-            <Ionicons name="trophy" size={16} color={Colors.warning} />
+            <Ionicons name="trophy" size={16} color={colors.warning} />
             <Text variant="medium" weight="semiBold" color={colors.textPrimary}>
               Achieved
             </Text>
           </View>
-          <View style={[styles.countBadge, { backgroundColor: Colors.warning + '18' }]}>
-            <Text variant="extraSmall" weight="bold" color={Colors.warning}>
+          <View style={[styles.countBadge, { backgroundColor: colors.warning + '18' }]}>
+            <Text variant="extraSmall" weight="bold" color={colors.warning}>
               {achievedGoals.length}
             </Text>
           </View>

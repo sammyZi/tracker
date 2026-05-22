@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from '../common/Text';
-import { Colors, BorderRadius, Spacing, Typography } from '../../constants/theme';
+import { BorderRadius, Spacing, Typography } from '../../constants/theme';
 
 interface MetricCardProps {
   label: string;
@@ -16,22 +16,24 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   unit,
   icon,
 }) => {
+  // MetricCard is used as an overlay on the map with semi-transparent dark bg,
+  // so it always uses white text regardless of theme
   return (
     <View style={styles.container}>
       {icon && <View style={styles.iconContainer}>{icon}</View>}
-      <Text variant="small" weight="regular" color={Colors.surface} style={styles.label}>
+      <Text variant="small" weight="regular" color="#FFFFFF" style={styles.label}>
         {label}
       </Text>
       <View style={styles.valueContainer}>
         <Text
           style={styles.value}
           weight="semiBold"
-          color={Colors.surface}
+          color="#FFFFFF"
         >
           {value}
         </Text>
         {unit && (
-          <Text variant="regular" weight="regular" color={Colors.surface} style={styles.unit}>
+          <Text variant="regular" weight="regular" color="#FFFFFF" style={styles.unit}>
             {unit}
           </Text>
         )}

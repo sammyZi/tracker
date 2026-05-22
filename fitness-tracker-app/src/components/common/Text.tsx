@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text as RNText, TextProps as RNTextProps, StyleSheet } from 'react-native';
-import { Typography, Colors } from '../../constants/theme';
+import { Typography } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 
 interface TextProps extends RNTextProps {
   variant?: 'extraLarge' | 'large' | 'mediumLarge' | 'medium' | 'regular' | 'small' | 'extraSmall';
@@ -12,12 +13,13 @@ interface TextProps extends RNTextProps {
 export const Text: React.FC<TextProps> = ({
   variant = 'regular',
   weight = 'regular',
-  color = Colors.textPrimary,
+  color,
   align = 'left',
   style,
   children,
   ...props
 }) => {
+  const { colors } = useTheme();
   const fontFamily = Typography.fontFamily[weight];
   const fontSize = Typography.fontSize[variant];
 
@@ -28,7 +30,7 @@ export const Text: React.FC<TextProps> = ({
         {
           fontFamily,
           fontSize,
-          color,
+          color: color || colors.textPrimary,
           textAlign: align,
         },
         style,

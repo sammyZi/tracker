@@ -15,7 +15,7 @@ import React, { useState, useCallback } from 'react';
 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -32,7 +32,7 @@ import {
   ForgotPasswordScreen,
   AccountSettingsScreen,
 } from '../screens';
-import { Colors } from '../constants/theme';
+import { useTheme } from '../hooks';
 import { useAuth } from '../context';
 
 // ── Storage key for "skip auth" preference ──────────────────────────────────
@@ -178,14 +178,15 @@ const SettingsStackNavigator = () => {
 // ── Main Tab Navigator ──────────────────────────────────────────────────────
 
 const MainTabNavigator: React.FC = () => {
+  const { colors } = useTheme();
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textSecondary,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
-          backgroundColor: Colors.surface,
-          borderTopColor: Colors.border,
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
           paddingBottom: 20,
           paddingTop: 8,
           height: 68,
@@ -252,6 +253,7 @@ const MainTabNavigator: React.FC = () => {
 const AppNavigatorComponent: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const [authSkipped, setAuthSkipped] = useState<boolean | null>(null);
+  const { colors, isDark } = useTheme();
 
   // Restore skip preference on mount
   React.useEffect(() => {
@@ -287,8 +289,23 @@ const AppNavigatorComponent: React.FC = () => {
   // Determine whether to show auth screens or main app
   const showMainApp = isAuthenticated || authSkipped;
 
+  const baseTheme = isDark ? DarkTheme : DefaultTheme;
+  const navigationTheme = {
+    ...baseTheme,
+    dark: isDark,
+    colors: {
+      ...baseTheme.colors,
+      primary: colors.primary,
+      background: colors.background,
+      card: colors.surface,
+      text: colors.textPrimary,
+      border: colors.border,
+      notification: colors.primary,
+    },
+  };
+
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navigationTheme}>
       {showMainApp ? (
         <MainTabNavigator />
       ) : (

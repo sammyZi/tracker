@@ -13,7 +13,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from './Text';
-import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 
 export interface ConfirmModalButton {
   text: string;
@@ -38,12 +39,14 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   title,
   message,
   icon = 'alert-circle',
-  iconColor = Colors.primary,
+  iconColor,
   buttons,
   loading = false,
   loadingMessage = 'Processing...',
   onRequestClose,
 }) => {
+  const { colors } = useTheme();
+  const resolvedIconColor = iconColor || colors.primary;
   const [processingIndex, setProcessingIndex] = React.useState<number | null>(null);
 
   const handleButtonPress = async (button: ConfirmModalButton, index: number) => {
@@ -58,11 +61,11 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   const getButtonStyle = (style?: string) => {
     switch (style) {
       case 'destructive':
-        return styles.buttonDestructive;
+        return { backgroundColor: colors.error };
       case 'cancel':
-        return styles.buttonCancel;
+        return { backgroundColor: colors.border };
       default:
-        return styles.buttonDefault;
+        return { backgroundColor: colors.primary + '15' };
     }
   };
 
@@ -71,9 +74,9 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       case 'destructive':
         return '#FFFFFF';
       case 'cancel':
-        return Colors.textPrimary;
+        return colors.textPrimary;
       default:
-        return Colors.primary;
+        return colors.primary;
     }
   };
 
@@ -87,23 +90,23 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       onRequestClose={onRequestClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.content}>
-          <View style={[styles.iconContainer, { backgroundColor: iconColor + '15' }]}>
-            <Ionicons name={icon} size={48} color={iconColor} />
+        <View style={[styles.content, { backgroundColor: colors.surface }]}>
+          <View style={[styles.iconContainer, { backgroundColor: resolvedIconColor + '15' }]}>
+            <Ionicons name={icon} size={48} color={resolvedIconColor} />
           </View>
 
-          <Text variant="large" weight="bold" color={Colors.textPrimary} style={styles.title}>
+          <Text variant="large" weight="bold" color={colors.textPrimary} style={styles.title}>
             {title}
           </Text>
 
-          <Text variant="regular" color={Colors.textSecondary} style={styles.message}>
+          <Text variant="regular" color={colors.textSecondary} style={styles.message}>
             {message}
           </Text>
 
           {isProcessing ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={Colors.primary} />
-              <Text variant="regular" color={Colors.textSecondary} style={styles.loadingText}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text variant="regular" color={colors.textSecondary} style={styles.loadingText}>
                 {loadingMessage}
               </Text>
             </View>
@@ -141,7 +144,6 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
   },
   content: {
-    backgroundColor: Colors.surface,
     borderRadius: BorderRadius.large,
     padding: Spacing.xl,
     width: '100%',
@@ -177,15 +179,6 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.medium,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  buttonDefault: {
-    backgroundColor: Colors.primary + '15',
-  },
-  buttonCancel: {
-    backgroundColor: Colors.border,
-  },
-  buttonDestructive: {
-    backgroundColor: Colors.error,
   },
   loadingContainer: {
     alignItems: 'center',

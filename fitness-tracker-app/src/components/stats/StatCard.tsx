@@ -8,7 +8,8 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../common/Text';
-import { Colors, Spacing } from '../../constants/theme';
+import { Spacing } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 
 interface StatCardProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -21,19 +22,22 @@ export const StatCard: React.FC<StatCardProps> = ({
   icon,
   label,
   value,
-  color = Colors.primary,
+  color,
 }) => {
+  const { colors } = useTheme();
+  const iconColor = color || colors.primary;
+
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <View style={[styles.iconWrap, { backgroundColor: color + '15' }]}>
-          <Ionicons name={icon} size={16} color={color} />
+        <View style={[styles.iconWrap, { backgroundColor: iconColor + '15' }]}>
+          <Ionicons name={icon} size={16} color={iconColor} />
         </View>
-        <Text variant="extraSmall" weight="medium" color={Colors.textSecondary}>
+        <Text variant="extraSmall" weight="medium" color={colors.textSecondary}>
           {label}
         </Text>
       </View>
-      <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
+      <Text variant="mediumLarge" weight="bold" color={colors.textPrimary}>
         {value}
       </Text>
     </View>

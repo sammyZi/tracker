@@ -12,7 +12,8 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { Text } from './Text';
-import { Colors, BorderRadius, Layout, Shadows, Spacing } from '../../constants/theme';
+import { BorderRadius, Layout, Shadows, Spacing } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
@@ -42,6 +43,7 @@ export const Button: React.FC<ButtonProps> = ({
   children,
   ...props
 }) => {
+  const { colors } = useTheme();
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -67,38 +69,38 @@ export const Button: React.FC<ButtonProps> = ({
 
     switch (variant) {
       case 'primary':
-        baseStyle.push(styles.primaryButton);
+        baseStyle.push({ backgroundColor: colors.primary, ...Shadows.medium });
         break;
       case 'secondary':
-        baseStyle.push(styles.secondaryButton);
+        baseStyle.push({ backgroundColor: colors.success, ...Shadows.medium });
         break;
       case 'outline':
-        baseStyle.push(styles.outlineButton);
+        baseStyle.push({ backgroundColor: 'transparent', borderWidth: 2, borderColor: colors.primary });
         break;
       case 'ghost':
-        baseStyle.push(styles.ghostButton);
+        baseStyle.push({ backgroundColor: 'transparent' });
         break;
     }
 
     if (disabled) {
-      baseStyle.push(styles.disabledButton);
+      baseStyle.push({ backgroundColor: colors.disabled, opacity: 0.6 });
     }
 
     return baseStyle;
   };
 
   const getTextColor = () => {
-    if (disabled) return Colors.disabled;
+    if (disabled) return colors.disabled;
     
     switch (variant) {
       case 'primary':
       case 'secondary':
-        return Colors.surface;
+        return '#FFFFFF';
       case 'outline':
       case 'ghost':
-        return Colors.primary;
+        return colors.primary;
       default:
-        return Colors.surface;
+        return '#FFFFFF';
     }
   };
 
@@ -159,26 +161,6 @@ const styles = StyleSheet.create({
   },
   fullWidth: {
     width: '100%',
-  },
-  primaryButton: {
-    backgroundColor: Colors.primary,
-    ...Shadows.medium,
-  },
-  secondaryButton: {
-    backgroundColor: Colors.success,
-    ...Shadows.medium,
-  },
-  outlineButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: Colors.primary,
-  },
-  ghostButton: {
-    backgroundColor: 'transparent',
-  },
-  disabledButton: {
-    backgroundColor: Colors.disabled,
-    opacity: 0.6,
   },
   content: {
     flexDirection: 'row',

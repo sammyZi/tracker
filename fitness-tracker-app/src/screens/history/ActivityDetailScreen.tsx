@@ -29,15 +29,16 @@ import {
   formatDate,
   formatDateTime,
 } from '../../utils/formatting';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Spacing, BorderRadius } from '../../constants/theme';
 import StorageService from '../../services/storage/StorageService';
 import { useActivitySharing } from '../../hooks/useActivitySharing';
+import { useTheme } from '../../hooks';
 
-// Activity type config for icons and accent colors
-const ACTIVITY_CONFIG: Record<string, { icon: string; color: string }> = {
-  running: { icon: 'fitness', color: Colors.success },
-  walking: { icon: 'walk', color: Colors.warning },
-  default: { icon: 'fitness', color: Colors.primary },
+// Activity type config for icons
+const ACTIVITY_CONFIG: Record<string, { icon: string }> = {
+  running: { icon: 'fitness' },
+  walking: { icon: 'walk' },
+  default: { icon: 'fitness' },
 };
 
 const getActivityConfig = (type: string) =>
@@ -47,6 +48,9 @@ export const ActivityDetailScreen: React.FC<any> = ({
   route,
   navigation,
 }) => {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const { activityId } = route.params;
   const [activity, setActivity] = useState<Activity | null>(null);
   const [units, setUnits] = useState<UnitSystem>('metric');
@@ -129,7 +133,7 @@ export const ActivityDetailScreen: React.FC<any> = ({
       console.error('Error deleting activity:', error);
       setIsDeleting(false);
     }
-  }
+  };
 
   const cancelDelete = () => {
     setShowDeleteModal(false);
@@ -180,22 +184,22 @@ export const ActivityDetailScreen: React.FC<any> = ({
     }
   };
 
-  const shareOptions: ShareOption[] = [
+  const shareOptions: ShareOption[] = useMemo(() => [
     {
       id: 'image',
       label: 'Share as Image',
       icon: 'image-outline',
-      color: Colors.primary,
+      color: colors.primary,
       onPress: handleShareAsImage,
     },
     {
       id: 'text',
       label: 'Share as Text',
       icon: 'text-outline',
-      color: Colors.success,
+      color: colors.success,
       onPress: handleShareAsText,
     },
-  ];
+  ], [colors, handleShareAsImage, handleShareAsText]);
 
   // ── Shared header for loading/error states ──
   const renderHeader = (showActions = false) => (
@@ -205,18 +209,18 @@ export const ActivityDetailScreen: React.FC<any> = ({
         onPress={() => navigation.goBack()}
         activeOpacity={0.7}
       >
-        <Ionicons name="arrow-back" size={22} color={Colors.textPrimary} />
+        <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
       </TouchableOpacity>
-      <Text variant="mediumLarge" weight="semiBold" color={Colors.textPrimary}>
+      <Text variant="mediumLarge" weight="semiBold" color={colors.textPrimary}>
         Activity
       </Text>
       {showActions ? (
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerButton} onPress={handleShare} activeOpacity={0.7}>
-            <Ionicons name="share-outline" size={22} color={Colors.textPrimary} />
+            <Ionicons name="share-outline" size={22} color={colors.textPrimary} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerButton} onPress={handleDelete} activeOpacity={0.7}>
-            <Ionicons name="trash-outline" size={22} color={Colors.error} />
+            <Ionicons name="trash-outline" size={22} color={colors.error} />
           </TouchableOpacity>
         </View>
       ) : (
@@ -229,10 +233,11 @@ export const ActivityDetailScreen: React.FC<any> = ({
   if (!isReady) {
     return (
       <View style={styles.screen}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.surface} />
         <View style={styles.statusBarSpacer} />
         {renderHeader()}
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </View>
     );
@@ -242,13 +247,14 @@ export const ActivityDetailScreen: React.FC<any> = ({
   if (!activity) {
     return (
       <View style={styles.screen}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.surface} />
         <View style={styles.statusBarSpacer} />
         {renderHeader()}
         <View style={styles.centered}>
           <View style={styles.emptyIcon}>
-            <Ionicons name="alert-circle-outline" size={44} color={Colors.disabled} />
+            <Ionicons name="alert-circle-outline" size={44} color={colors.disabled} />
           </View>
-          <Text variant="regular" weight="medium" color={Colors.textSecondary} style={{ marginTop: Spacing.md }}>
+          <Text variant="regular" weight="medium" color={colors.textSecondary} style={{ marginTop: Spacing.md }}>
             Activity not found
           </Text>
         </View>
@@ -257,11 +263,13 @@ export const ActivityDetailScreen: React.FC<any> = ({
   }
 
   const config = getActivityConfig(activity.type);
+  const accentColor = (activity.type as string) === 'running' ? colors.success : (activity.type as string) === 'walking' ? colors.warning : colors.primary;
   const distanceParts = formatDistance(activity.distance, units, 2).split(' ');
   const paceParts = formatPace(activity.averagePace, units).split(' ');
 
   return (
     <View style={styles.screen}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.surface} />
       <View style={styles.statusBarSpacer} />
       {renderHeader(true)}
 
@@ -276,13 +284,13 @@ export const ActivityDetailScreen: React.FC<any> = ({
           {/* ── Hero Section ── */}
           <View style={styles.heroSection}>
             <View style={styles.heroTop}>
-              <View style={[styles.activityBadge, { backgroundColor: config.color + '15' }]}>
-                <Ionicons name={config.icon as any} size={20} color={config.color} />
-                <Text variant="small" weight="semiBold" color={config.color} style={{ marginLeft: 6 }}>
+              <View style={[styles.activityBadge, { backgroundColor: accentColor + '15' }]}>
+                <Ionicons name={config.icon as any} size={20} color={accentColor} />
+                <Text variant="small" weight="semiBold" color={accentColor} style={{ marginLeft: 6 }}>
                   {activity.type.charAt(0).toUpperCase() + activity.type.slice(1)}
                 </Text>
               </View>
-              <Text variant="small" color={Colors.textSecondary}>
+              <Text variant="small" color={colors.textSecondary}>
                 {formatDateTime(activity.startTime)}
               </Text>
             </View>
@@ -290,7 +298,7 @@ export const ActivityDetailScreen: React.FC<any> = ({
             {/* Big distance number */}
             <View style={styles.heroMetric}>
               <Text style={styles.heroValue}>{distanceParts[0]}</Text>
-              <Text variant="regular" weight="medium" color={Colors.textSecondary} style={{ marginLeft: 6, marginBottom: 10 }}>
+              <Text variant="regular" weight="medium" color={colors.textSecondary} style={{ marginLeft: 6, marginBottom: 10 }}>
                 {distanceParts[1]}
               </Text>
             </View>
@@ -298,28 +306,28 @@ export const ActivityDetailScreen: React.FC<any> = ({
             {/* Quick stats row */}
             <View style={styles.heroStatsRow}>
               <View style={styles.heroStat}>
-                <Text variant="extraSmall" color={Colors.textSecondary} style={styles.heroStatLabel}>
+                <Text variant="extraSmall" color={colors.textSecondary} style={styles.heroStatLabel}>
                   Duration
                 </Text>
-                <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
+                <Text variant="mediumLarge" weight="bold" color={colors.textPrimary}>
                   {formatDuration(activity.duration)}
                 </Text>
               </View>
               <View style={styles.heroStatDivider} />
               <View style={styles.heroStat}>
-                <Text variant="extraSmall" color={Colors.textSecondary} style={styles.heroStatLabel}>
+                <Text variant="extraSmall" color={colors.textSecondary} style={styles.heroStatLabel}>
                   Pace
                 </Text>
-                <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
+                <Text variant="mediumLarge" weight="bold" color={colors.textPrimary}>
                   {paceParts[0]}
                 </Text>
               </View>
               <View style={styles.heroStatDivider} />
               <View style={styles.heroStat}>
-                <Text variant="extraSmall" color={Colors.textSecondary} style={styles.heroStatLabel}>
+                <Text variant="extraSmall" color={colors.textSecondary} style={styles.heroStatLabel}>
                   Calories
                 </Text>
-                <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
+                <Text variant="mediumLarge" weight="bold" color={colors.textPrimary}>
                   {Math.round(activity.calories)}
                 </Text>
               </View>
@@ -330,18 +338,18 @@ export const ActivityDetailScreen: React.FC<any> = ({
 
           {/* ── Key Metrics ── */}
           <View style={styles.section}>
-            <Text variant="extraSmall" weight="semiBold" color={Colors.primary} style={styles.sectionLabel}>
+            <Text variant="extraSmall" weight="semiBold" color={colors.primary} style={styles.sectionLabel}>
               KEY METRICS
             </Text>
             <View style={styles.metricsRow}>
               <View style={styles.metricItem}>
                 <View style={styles.metricHeader}>
-                  <View style={[styles.metricIconWrap, { backgroundColor: Colors.primary + '15' }]}>
-                    <Ionicons name="footsteps-outline" size={16} color={Colors.primary} />
+                  <View style={[styles.metricIconWrap, { backgroundColor: colors.primary + '15' }]}>
+                    <Ionicons name="footsteps-outline" size={16} color={colors.primary} />
                   </View>
-                  <Text variant="extraSmall" weight="medium" color={Colors.textSecondary}>Steps</Text>
+                  <Text variant="extraSmall" weight="medium" color={colors.textSecondary}>Steps</Text>
                 </View>
-                <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
+                <Text variant="mediumLarge" weight="bold" color={colors.textPrimary}>
                   {activity.steps.toLocaleString()}
                 </Text>
               </View>
@@ -349,40 +357,40 @@ export const ActivityDetailScreen: React.FC<any> = ({
                 <>
                   <View style={styles.metricItem}>
                     <View style={styles.metricHeader}>
-                      <View style={[styles.metricIconWrap, { backgroundColor: Colors.success + '15' }]}>
-                        <Ionicons name="speedometer-outline" size={16} color={Colors.success} />
+                      <View style={[styles.metricIconWrap, { backgroundColor: colors.success + '15' }]}>
+                        <Ionicons name="speedometer-outline" size={16} color={colors.success} />
                       </View>
-                      <Text variant="extraSmall" weight="medium" color={Colors.textSecondary}>Speed</Text>
+                      <Text variant="extraSmall" weight="medium" color={colors.textSecondary}>Speed</Text>
                     </View>
-                    <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
+                    <Text variant="mediumLarge" weight="bold" color={colors.textPrimary}>
                       {computedStats.speed}
-                      <Text variant="extraSmall" color={Colors.textSecondary}>
+                      <Text variant="extraSmall" color={colors.textSecondary}>
                         {' '}{units === 'metric' ? 'km/h' : 'mph'}
                       </Text>
                     </Text>
                   </View>
                   <View style={styles.metricItem}>
                     <View style={styles.metricHeader}>
-                      <View style={[styles.metricIconWrap, { backgroundColor: Colors.info + '15' }]}>
-                        <Ionicons name="pulse-outline" size={16} color={Colors.info} />
+                      <View style={[styles.metricIconWrap, { backgroundColor: colors.info + '15' }]}>
+                        <Ionicons name="pulse-outline" size={16} color={colors.info} />
                       </View>
-                      <Text variant="extraSmall" weight="medium" color={Colors.textSecondary}>Cadence</Text>
+                      <Text variant="extraSmall" weight="medium" color={colors.textSecondary}>Cadence</Text>
                     </View>
-                    <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
+                    <Text variant="mediumLarge" weight="bold" color={colors.textPrimary}>
                       {computedStats.cadence}
-                      <Text variant="extraSmall" color={Colors.textSecondary}> spm</Text>
+                      <Text variant="extraSmall" color={colors.textSecondary}> spm</Text>
                     </Text>
                   </View>
                   <View style={styles.metricItem}>
                     <View style={styles.metricHeader}>
-                      <View style={[styles.metricIconWrap, { backgroundColor: Colors.warning + '15' }]}>
-                        <Ionicons name="resize-outline" size={16} color={Colors.warning} />
+                      <View style={[styles.metricIconWrap, { backgroundColor: colors.warning + '15' }]}>
+                        <Ionicons name="resize-outline" size={16} color={colors.warning} />
                       </View>
-                      <Text variant="extraSmall" weight="medium" color={Colors.textSecondary}>Stride</Text>
+                      <Text variant="extraSmall" weight="medium" color={colors.textSecondary}>Stride</Text>
                     </View>
-                    <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
+                    <Text variant="mediumLarge" weight="bold" color={colors.textPrimary}>
                       {computedStats.stride}
-                      <Text variant="extraSmall" color={Colors.textSecondary}> cm</Text>
+                      <Text variant="extraSmall" color={colors.textSecondary}> cm</Text>
                     </Text>
                   </View>
                 </>
@@ -396,10 +404,10 @@ export const ActivityDetailScreen: React.FC<any> = ({
           <View style={styles.section}>
             <View style={styles.mapHeaderRow}>
               <View>
-                <Text variant="extraSmall" weight="semiBold" color={Colors.primary} style={styles.sectionLabel}>
+                <Text variant="extraSmall" weight="semiBold" color={colors.primary} style={styles.sectionLabel}>
                   ROUTE
                 </Text>
-                <Text variant="extraSmall" color={Colors.textSecondary}>
+                <Text variant="extraSmall" color={colors.textSecondary}>
                   {activity.route.length} GPS points
                 </Text>
               </View>
@@ -411,12 +419,12 @@ export const ActivityDetailScreen: React.FC<any> = ({
                 <Ionicons
                   name={showPaceHeatmap ? 'color-palette' : 'color-palette-outline'}
                   size={16}
-                  color={showPaceHeatmap ? '#FFFFFF' : Colors.textSecondary}
+                  color={showPaceHeatmap ? '#FFFFFF' : colors.textSecondary}
                 />
                 <Text
                   variant="extraSmall"
                   weight="medium"
-                  color={showPaceHeatmap ? '#FFFFFF' : Colors.textSecondary}
+                  color={showPaceHeatmap ? '#FFFFFF' : colors.textSecondary}
                   style={{ marginLeft: 4 }}
                 >
                   Pace
@@ -434,8 +442,8 @@ export const ActivityDetailScreen: React.FC<any> = ({
                 />
               ) : (
                 <View style={styles.mapPlaceholder}>
-                  <ActivityIndicator size="small" color={Colors.primary} />
-                  <Text variant="extraSmall" color={Colors.textSecondary} style={{ marginTop: 8 }}>Loading map...</Text>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text variant="extraSmall" color={colors.textSecondary} style={{ marginTop: 8 }}>Loading map...</Text>
                 </View>
               )}
             </View>
@@ -444,15 +452,15 @@ export const ActivityDetailScreen: React.FC<any> = ({
             {computedStats && (
               <View style={styles.mapMeta}>
                 <View style={styles.mapMetaItem}>
-                  <Ionicons name="locate-outline" size={14} color={Colors.success} />
-                  <Text variant="extraSmall" color={Colors.textSecondary} style={{ marginLeft: 4 }}>
+                  <Ionicons name="locate-outline" size={14} color={colors.success} />
+                  <Text variant="extraSmall" color={colors.textSecondary} style={{ marginLeft: 4 }}>
                     {computedStats.avgAccuracy}m accuracy
                   </Text>
                 </View>
                 {activity.elevationGain !== undefined && activity.elevationGain > 0 && (
                   <View style={styles.mapMetaItem}>
-                    <Ionicons name="arrow-up-outline" size={14} color={Colors.warning} />
-                    <Text variant="extraSmall" color={Colors.textSecondary} style={{ marginLeft: 4 }}>
+                    <Ionicons name="arrow-up-outline" size={14} color={colors.warning} />
+                    <Text variant="extraSmall" color={colors.textSecondary} style={{ marginLeft: 4 }}>
                       +{activity.elevationGain.toFixed(0)}m elevation
                     </Text>
                   </View>
@@ -465,15 +473,15 @@ export const ActivityDetailScreen: React.FC<any> = ({
 
           {/* ── Details ── */}
           <View style={styles.section}>
-            <Text variant="extraSmall" weight="semiBold" color={Colors.primary} style={styles.sectionLabel}>
+            <Text variant="extraSmall" weight="semiBold" color={colors.primary} style={styles.sectionLabel}>
               DETAILS
             </Text>
 
             <View style={styles.detailRow}>
-              <Ionicons name="calendar-outline" size={18} color={Colors.primary} />
+              <Ionicons name="calendar-outline" size={18} color={colors.primary} />
               <View style={styles.detailContent}>
-                <Text variant="extraSmall" color={Colors.textSecondary}>Date</Text>
-                <Text variant="regular" weight="medium" color={Colors.textPrimary}>
+                <Text variant="extraSmall" color={colors.textSecondary}>Date</Text>
+                <Text variant="regular" weight="medium" color={colors.textPrimary}>
                   {formatDate(activity.startTime, 'long')}
                 </Text>
               </View>
@@ -482,10 +490,10 @@ export const ActivityDetailScreen: React.FC<any> = ({
             <View style={styles.detailDivider} />
 
             <View style={styles.detailRow}>
-              <Ionicons name="time-outline" size={18} color={Colors.success} />
+              <Ionicons name="time-outline" size={18} color={colors.success} />
               <View style={styles.detailContent}>
-                <Text variant="extraSmall" color={Colors.textSecondary}>Time Range</Text>
-                <Text variant="regular" weight="medium" color={Colors.textPrimary}>
+                <Text variant="extraSmall" color={colors.textSecondary}>Time Range</Text>
+                <Text variant="regular" weight="medium" color={colors.textPrimary}>
                   {formatDate(activity.startTime, 'time')} – {formatDate(activity.endTime, 'time')}
                 </Text>
               </View>
@@ -494,10 +502,10 @@ export const ActivityDetailScreen: React.FC<any> = ({
             <View style={styles.detailDivider} />
 
             <View style={styles.detailRow}>
-              <Ionicons name="location-outline" size={18} color={Colors.info} />
+              <Ionicons name="location-outline" size={18} color={colors.info} />
               <View style={styles.detailContent}>
-                <Text variant="extraSmall" color={Colors.textSecondary}>GPS Tracking</Text>
-                <Text variant="regular" weight="medium" color={Colors.textPrimary}>
+                <Text variant="extraSmall" color={colors.textSecondary}>GPS Tracking</Text>
+                <Text variant="regular" weight="medium" color={colors.textPrimary}>
                   {activity.route.length} points · {computedStats?.avgAccuracy}m avg
                 </Text>
               </View>
@@ -507,10 +515,10 @@ export const ActivityDetailScreen: React.FC<any> = ({
               <>
                 <View style={styles.detailDivider} />
                 <View style={styles.detailRow}>
-                  <Ionicons name="trending-up-outline" size={18} color={Colors.warning} />
+                  <Ionicons name="trending-up-outline" size={18} color={colors.warning} />
                   <View style={styles.detailContent}>
-                    <Text variant="extraSmall" color={Colors.textSecondary}>Elevation Gain</Text>
-                    <Text variant="regular" weight="medium" color={Colors.textPrimary}>
+                    <Text variant="extraSmall" color={colors.textSecondary}>Elevation Gain</Text>
+                    <Text variant="regular" weight="medium" color={colors.textPrimary}>
                       {activity.elevationGain.toFixed(0)} meters
                     </Text>
                   </View>
@@ -521,8 +529,8 @@ export const ActivityDetailScreen: React.FC<any> = ({
 
           {/* Branding Footer for Shared Image */}
           <View style={styles.brandingFooter}>
-            <Ionicons name="fitness" size={16} color={Colors.primary} />
-            <Text variant="extraSmall" weight="medium" color={Colors.disabled} style={{ marginLeft: 6 }}>
+            <Ionicons name="fitness" size={16} color={colors.primary} />
+            <Text variant="extraSmall" weight="medium" color={colors.disabled} style={{ marginLeft: 6 }}>
               Tracked with Stride
             </Text>
           </View>
@@ -559,21 +567,21 @@ export const ActivityDetailScreen: React.FC<any> = ({
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalIconWrap}>
-              <Ionicons name="trash" size={36} color={Colors.error} />
+              <Ionicons name="trash" size={36} color={colors.error} />
             </View>
 
-            <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary} style={styles.modalTitle}>
+            <Text variant="mediumLarge" weight="bold" color={colors.textPrimary} style={styles.modalTitle}>
               Delete Activity
             </Text>
 
-            <Text variant="regular" color={Colors.textSecondary} style={styles.modalMessage}>
+            <Text variant="regular" color={colors.textSecondary} style={styles.modalMessage}>
               Are you sure you want to delete this activity? This action cannot be undone.
             </Text>
 
             {isDeleting ? (
               <View style={styles.modalLoading}>
-                <ActivityIndicator size="large" color={Colors.error} />
-                <Text variant="regular" color={Colors.textSecondary} style={{ marginTop: Spacing.md }}>
+                <ActivityIndicator size="large" color={colors.error} />
+                <Text variant="regular" color={colors.textSecondary} style={{ marginTop: Spacing.md }}>
                   Deleting...
                 </Text>
               </View>
@@ -584,7 +592,7 @@ export const ActivityDetailScreen: React.FC<any> = ({
                   onPress={cancelDelete}
                   activeOpacity={0.7}
                 >
-                  <Text variant="regular" weight="semiBold" color={Colors.textPrimary}>
+                  <Text variant="regular" weight="semiBold" color={colors.textPrimary}>
                     Cancel
                   </Text>
                 </TouchableOpacity>
@@ -607,10 +615,10 @@ export const ActivityDetailScreen: React.FC<any> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
   },
   statusBarSpacer: {
     height: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 44,
@@ -624,7 +632,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: Colors.border + '60',
+    backgroundColor: colors.border + '60',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -660,7 +668,7 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
   },
   capturable: {
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
   },
 
   // ── Hero ──
@@ -690,7 +698,7 @@ const styles = StyleSheet.create({
   heroValue: {
     fontSize: 56,
     fontFamily: 'Poppins_700Bold',
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
     lineHeight: 62,
     includeFontPadding: false,
   },
@@ -710,7 +718,7 @@ const styles = StyleSheet.create({
   heroStatDivider: {
     width: 1,
     height: 32,
-    backgroundColor: Colors.border,
+    backgroundColor: colors.border,
   },
 
   // ── Sections ──
@@ -725,7 +733,7 @@ const styles = StyleSheet.create({
   },
   sectionDivider: {
     height: 1,
-    backgroundColor: Colors.border,
+    backgroundColor: colors.border,
     marginHorizontal: 20,
   },
 
@@ -739,7 +747,7 @@ const styles = StyleSheet.create({
     width: '47%',
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.md,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
     borderRadius: 14,
     gap: 6,
   },
@@ -769,16 +777,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   paceToggleActive: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
   },
   mapContainer: {
     height: 280,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   mapPlaceholder: {
     flex: 1,
@@ -808,7 +816,7 @@ const styles = StyleSheet.create({
   },
   detailDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: Colors.border,
+    backgroundColor: colors.border,
     marginLeft: 34,
   },
 
@@ -836,7 +844,7 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
   },
   modalContent: {
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: 20,
     padding: Spacing.xl,
     width: '100%',
@@ -847,7 +855,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: Colors.error + '12',
+    backgroundColor: colors.error + '12',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.lg,
@@ -874,10 +882,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalBtnCancel: {
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   modalBtnDelete: {
-    backgroundColor: Colors.error,
+    backgroundColor: colors.error,
   },
   modalLoading: {
     alignItems: 'center',

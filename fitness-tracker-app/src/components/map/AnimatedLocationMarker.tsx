@@ -13,7 +13,8 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-import { Colors, Shadows } from '@/constants/theme';
+import { Shadows } from '@/constants/theme';
+import { useTheme } from '../../hooks';
 
 interface AnimatedLocationMarkerProps {
   size?: number;
@@ -22,10 +23,12 @@ interface AnimatedLocationMarkerProps {
 
 export const AnimatedLocationMarker: React.FC<AnimatedLocationMarkerProps> = ({
   size = 40,
-  color = Colors.primary,
+  color,
 }) => {
+  const { colors } = useTheme();
   const scale = useSharedValue(1);
   const opacity = useSharedValue(0.3);
+  const markerColor = color || colors.primary;
 
   useEffect(() => {
     // Pulsing animation
@@ -65,7 +68,7 @@ export const AnimatedLocationMarker: React.FC<AnimatedLocationMarkerProps> = ({
             width: size,
             height: size,
             borderRadius: size / 2,
-            backgroundColor: color,
+            backgroundColor: markerColor,
           },
           animatedStyle,
         ]}
@@ -79,7 +82,8 @@ export const AnimatedLocationMarker: React.FC<AnimatedLocationMarkerProps> = ({
             width: size * 0.4,
             height: size * 0.4,
             borderRadius: (size * 0.4) / 2,
-            backgroundColor: color,
+            backgroundColor: markerColor,
+            borderColor: colors.surface,
           },
         ]}
       />
@@ -97,7 +101,6 @@ const styles = StyleSheet.create({
   },
   innerDot: {
     borderWidth: 3,
-    borderColor: Colors.surface,
     ...Shadows.small,
   },
 });
