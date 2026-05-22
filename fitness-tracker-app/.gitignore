@@ -2,7 +2,6 @@
 
 # dependencies
 node_modules/
-android/
 
 # Expo
 .expo/
@@ -42,3 +41,11 @@ GoogleService-Info.plist
 
 # Other
 kiro/
+
+# Android - ignore sensitive files and build artifacts
+android/app/src/main/AndroidManifest.xml
+android/output.log
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
