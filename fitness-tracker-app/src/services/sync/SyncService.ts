@@ -44,25 +44,56 @@ export interface MigrationProgress {
   percent: number;
 }
 
+// ── Client-side input validation ─────────────────────────────────────────────
+// Defense-in-depth: validate before sending to Supabase. The DB constraints are
+// the ultimate guard, but catching errors early avoids unnecessary round-trips.
+
+const VALID_ACTIVITY_TYPES = ['activity', 'walk', 'run', 'hike', 'cycle'];
+const VALID_ACTIVITY_STATUSES = ['active', 'paused', 'completed', 'discarded'];
+const VALID_GOAL_TYPES = ['distance', 'frequency', 'duration'];
+const VALID_GOAL_PERIODS = ['weekly', 'monthly'];
+const MAX_ROUTE_POINTS = 50_000;
+const MAX_NAME_LENGTH = 100;
+
+/** Clamp a number to [min, max]. */
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+/** Ensure a value is one of the allowed strings. */
+function validateEnum(value: string, allowed: string[], fallback: string): string {
+  return allowed.includes(value) ? value : fallback;
+}
+
+/** Sanitize a string: trim whitespace, limit length. */
+function sanitizeString(value: string, maxLength: number): string {
+  return (value || '').trim().slice(0, maxLength);
+}
+
 // ── Supabase ↔ Local type mappers ────────────────────────────────────────────
 
-/** Convert a local Activity to a Supabase row. */
+/** Convert a local Activity to a Supabase row (with validation). */
 function activityToRow(activity: Activity, userId: string) {
+  // Truncate route if it exceeds DB limit
+  const route = Array.isArray(activity.route) && activity.route.length > MAX_ROUTE_POINTS
+    ? activity.route.slice(-MAX_ROUTE_POINTS) // Keep most recent points
+    : activity.route;
+
   return {
     id: activity.id,
     user_id: userId,
-    type: activity.type,
+    type: validateEnum(activity.type, VALID_ACTIVITY_TYPES, 'activity'),
     start_time: new Date(activity.startTime).toISOString(),
     end_time: new Date(activity.endTime).toISOString(),
-    duration: activity.duration,
-    distance: activity.distance,
-    steps: activity.steps,
-    route: activity.route,
-    average_pace: activity.averagePace,
-    max_pace: activity.maxPace,
-    calories: activity.calories,
-    elevation_gain: activity.elevationGain ?? null,
-    status: activity.status,
+    duration: Math.max(0, Math.floor(activity.duration)),
+    distance: Math.max(0, activity.distance),
+    steps: Math.max(0, Math.floor(activity.steps)),
+    route,
+    average_pace: Math.max(0, activity.averagePace),
+    max_pace: Math.max(0, activity.maxPace),
+    calories: Math.max(0, Math.floor(activity.calories)),
+    elevation_gain: activity.elevationGain != null ? Math.max(0, activity.elevationGain) : null,
+    status: validateEnum(activity.status, VALID_ACTIVITY_STATUSES, 'completed'),
     created_at: new Date(activity.createdAt).toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -88,14 +119,14 @@ function rowToActivity(row: any): Activity {
   };
 }
 
-/** Convert a local UserProfile to a Supabase row. */
+/** Convert a local UserProfile to a Supabase row (with validation). */
 function profileToRow(profile: UserProfile, userId: string) {
   return {
     id: userId,
-    name: profile.name,
+    name: sanitizeString(profile.name || 'User', MAX_NAME_LENGTH),
     profile_picture_url: profile.profilePictureUri ?? null,
-    weight: profile.weight ?? null,
-    height: profile.height ?? null,
+    weight: profile.weight != null ? clamp(profile.weight, 0.1, 699.99) : null,
+    height: profile.height != null ? clamp(profile.height, 0.1, 299.99) : null,
     created_at: new Date(profile.createdAt).toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -114,7 +145,7 @@ function rowToProfile(row: any): UserProfile {
   };
 }
 
-/** Convert a local Goal to a Supabase row. */
+/** Convert a local Goal to a Supabase row (with validation). */
 function goalToRow(goal: Goal, userId: string) {
   // Database 'progress' is DECIMAL(5,2) max 999.99.
   // Convert absolute progress to percentage to prevent overflow.
@@ -123,12 +154,12 @@ function goalToRow(goal: Goal, userId: string) {
   return {
     id: goal.id,
     user_id: userId,
-    type: goal.type,
-    target: goal.target,
-    period: goal.period,
+    type: validateEnum(goal.type, VALID_GOAL_TYPES, 'distance'),
+    target: Math.max(0.01, goal.target),
+    period: validateEnum(goal.period, VALID_GOAL_PERIODS, 'weekly'),
     start_date: new Date(goal.startDate).toISOString(),
     end_date: new Date(goal.endDate).toISOString(),
-    progress: Math.min(progressPercent, 999.99), // Cap to max allowed by DB schema
+    progress: clamp(progressPercent, 0, 999.99),
     achieved: goal.achieved,
     created_at: new Date(goal.createdAt).toISOString(),
   };

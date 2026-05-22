@@ -26,6 +26,7 @@ import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 import SyncService from '../services/sync/SyncService';
 import StorageService from '../services/storage/StorageService';
 import { useAuth } from './AuthContext';
+import { logger } from '../utils/logger';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -207,19 +208,19 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (!isCloudSyncEnabled) {
           // Auto-enable cloud sync for logged-in users
           await StorageService.enableCloudSync(user.id);
-          console.log('[Sync] Cloud sync auto-enabled for user', user.id);
+          logger.log('[Sync] Cloud sync auto-enabled for user', user.id);
         }
         await SyncService.initialize(user.id);
-        console.log('[Sync] SyncService initialized');
+        logger.log('[Sync] SyncService initialized');
 
         // Download cloud data (restores profile/activities/goals on fresh install)
         await SyncService.downloadAllData();
-        console.log('[Sync] Cloud data downloaded');
+        logger.log('[Sync] Cloud data downloaded');
 
         // Bump syncVersion so all hooks re-read from local storage
         setSyncVersion((v) => v + 1);
       } catch (err) {
-        console.error('[Sync] Auto-init failed:', err);
+        logger.error('[Sync] Auto-init failed', err);
       } finally {
         // Whether download succeeded or failed, mark data as ready
         // so the app doesn't stay stuck showing empty screens.
@@ -315,7 +316,7 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           ...goalsResult.errors.map(e => `Goal(${e.itemId}): [${e.code}] ${e.error}`),
           ...profileResult.errors.map(e => `Profile: [${e.code}] ${e.error}`),
         ];
-        allErrors.forEach(msg => console.error(`[Sync]   └─ ${msg}`));
+        allErrors.forEach(msg => logger.error(`[Sync]   └─ ${msg}`));
         addNotification({
           type: 'error',
           title: 'Sync Issues',
@@ -327,7 +328,7 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       await refreshQueueCount();
     } catch (err) {
-      console.error('[Sync] triggerSync failed:', err);
+      logger.error('[Sync] triggerSync failed', err);
       addNotification({
         type: 'error',
         title: 'Sync Failed',
@@ -365,7 +366,7 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           duration: 3000,
         });
       } else {
-        console.warn(`[Sync] Retry partial: ${remaining.length} operation(s) still pending.`);
+        logger.warn(`[Sync] Retry partial: ${remaining.length} operation(s) still pending.`);
         addNotification({
           type: 'error',
           title: 'Partial Retry',
@@ -375,7 +376,7 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
       }
     } catch (err) {
-      console.error('[Sync] retryFailed failed:', err);
+      logger.error('[Sync] retryFailed failed', err);
       addNotification({
         type: 'error',
         title: 'Retry Failed',

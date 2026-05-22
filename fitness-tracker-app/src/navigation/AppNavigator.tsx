@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
+import { DeviceEventEmitter } from 'react-native';
 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
@@ -262,7 +263,7 @@ const AppNavigatorComponent: React.FC = () => {
     });
 
     // Listen for events to instantly un-skip auth and show login
-    const sub = require('react-native').DeviceEventEmitter.addListener('RESET_AUTH_SKIPPED', () => {
+    const sub = DeviceEventEmitter.addListener('RESET_AUTH_SKIPPED', () => {
       setAuthSkipped(false);
     });
 

@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 13.2.0"
+    "version": ">= 13.2.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -11,6 +12,10 @@
       },
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "APP_VARIANT": "development",
+        "EX_DEV_CLIENT_NETWORK_INSPECTOR": "true"
       }
     },
     "preview": {
@@ -20,6 +25,9 @@
       },
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "APP_VARIANT": "preview"
       }
     },
     "production": {
@@ -29,10 +37,18 @@
       },
       "android": {
         "buildType": "aab"
+      },
+      "env": {
+        "APP_VARIANT": "production"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./play-store-service-account.json",
+        "track": "internal"
+      }
+    }
   }
 }

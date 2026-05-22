@@ -11,8 +11,12 @@ if (Platform.OS === 'android') {
 export const configurePerformance = () => {
     // Set maximum frame rate
     if (Platform.OS === 'android') {
-        // Android-specific optimizations
-        InteractionManager.setDeadline(16.67); // 60 FPS baseline
+        try {
+            // Android-specific optimizations
+            InteractionManager.setDeadline(16.67); // 60 FPS baseline
+        } catch {
+            // setDeadline may not be available on all RN versions
+        }
     }
 };
 

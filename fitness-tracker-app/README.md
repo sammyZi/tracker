@@ -2,39 +2,44 @@
 
 A React Native mobile application built with Expo for tracking walking and running activities with comprehensive metrics, route mapping, and analytics.
 
+[![Play Store](https://img.shields.io/badge/Google_Play-Coming_Soon-green?logo=google-play)](https://play.google.com/store)
+
 ## Features
 
 - 🏃 Real-time activity tracking (walking/running)
-- 📍 High-accuracy GPS route mapping
+- 📍 High-accuracy GPS route mapping with Kalman filter smoothing
 - 📊 Comprehensive statistics and analytics
 - 🎯 Goal setting and achievement tracking
 - 📱 Background tracking with notifications
-- 🔐 Google OAuth authentication
-- ☁️ Cloud storage with Firebase
-- 👥 Social features (coming soon)
+- 🔐 Email/password and Google OAuth authentication
+- ☁️ Cloud sync with Supabase
 - 💾 Offline support with automatic sync
-- 📤 Data export for backups
+- 🔊 Audio coaching with distance announcements
 - 📈 Personal records and progress tracking
+- 🌙 Dark mode support
+- 📳 Haptic feedback
 
 ## Tech Stack
 
-- **Framework**: React Native with Expo
+- **Framework**: React Native with Expo (SDK 54)
 - **Language**: TypeScript
-- **Authentication**: Google OAuth with Firebase
-- **Backend**: Node.js + Express + Firebase
-- **Database**: Cloud Firestore
+- **Authentication**: Supabase Auth (email/password + Google OAuth)
+- **Backend**: Supabase (PostgreSQL + Auth + Storage)
 - **Local Storage**: AsyncStorage
-- **Maps**: React Native Maps
+- **Maps**: React Native Maps + Google Maps
 - **Navigation**: React Navigation
 - **State Management**: React Context API
+- **Animations**: React Native Reanimated
 - **Fonts**: Poppins (Google Fonts)
+- **Build**: EAS Build
 
 ## Prerequisites
 
-- Node.js (v16 or higher)
-- npm or yarn
-- Expo CLI
-- iOS Simulator (Mac) or Android Emulator
+- Node.js (v18 or higher)
+- npm
+- Expo CLI (`npx expo`)
+- Android Studio (for Android development)
+- EAS CLI (`npm install -g eas-cli`) — for building releases
 
 ## Installation
 
@@ -46,28 +51,61 @@ A React Native mobile application built with Expo for tracking walking and runni
    ```
 
 3. Set up environment variables:
-   - Copy `.env.example` to `.env`
-   - Add your Google OAuth Client ID
-   - Add your Google Maps API key
-   - Configure backend API URL
-
-4. Start the backend server (see `../backend/README.md`):
    ```bash
-   cd ../backend
-   npm start
+   cp .env.example .env
    ```
+   Then fill in your API keys in `.env`.
 
-5. Start the mobile app:
+4. Start the development server:
    ```bash
    npm start
    ```
 
-## Quick Start
+## Building for Production
 
-For quick authentication testing, see:
-- 📖 **[QUICK_START.md](./QUICK_START.md)** - Get started in 3 steps
-- 📚 **[AUTHENTICATION_GUIDE.md](./AUTHENTICATION_GUIDE.md)** - Detailed auth flow
-- ✅ **[TEST_AUTH.md](./TEST_AUTH.md)** - Testing checklist
+### Android (Play Store)
+
+1. **Generate release keystore** (first time only):
+   ```powershell
+   .\scripts\generate-keystore.ps1
+   ```
+
+2. **Build AAB for Play Store**:
+   ```bash
+   npm run build:android
+   ```
+
+3. **Submit to Play Store**:
+   ```bash
+   npm run submit:android
+   ```
+
+### Local Build
+
+For a local production build (no EAS account needed):
+```bash
+npm run build:local
+```
+
+### Preview Build (for testing)
+
+```bash
+npm run build:preview
+```
+
+## Available Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm start` | Start Expo dev server |
+| `npm run android` | Run on Android device/emulator |
+| `npm run ios` | Run on iOS simulator (Mac only) |
+| `npm test` | Run test suite |
+| `npm run typecheck` | TypeScript type checking |
+| `npm run build:android` | Build production AAB via EAS |
+| `npm run build:preview` | Build preview APK via EAS |
+| `npm run build:local` | Build production AAB locally |
+| `npm run submit:android` | Submit to Play Store |
 
 ## Project Structure
 
@@ -75,7 +113,7 @@ For quick authentication testing, see:
 fitness-tracker-app/
 ├── src/
 │   ├── components/          # Reusable UI components
-│   │   ├── common/          # Generic components
+│   │   ├── common/          # Generic components (ErrorBoundary, etc.)
 │   │   ├── activity/        # Activity-specific components
 │   │   ├── map/             # Map components
 │   │   └── charts/          # Chart components
@@ -85,28 +123,28 @@ fitness-tracker-app/
 │   │   ├── history/         # Activity history screens
 │   │   ├── stats/           # Statistics screens
 │   │   ├── profile/         # Profile screens
+│   │   ├── goals/           # Goals screens
+│   │   ├── onboarding/      # Permissions & onboarding
 │   │   └── settings/        # Settings screens
 │   ├── navigation/          # Navigation configuration
 │   ├── services/            # Business logic services
-│   │   ├── location/        # Location tracking
-│   │   ├── activity/        # Activity management
-│   │   └── storage/         # Local storage (AsyncStorage)
+│   │   ├── location/        # GPS tracking & background tasks
+│   │   ├── storage/         # Local & cloud storage
+│   │   ├── sync/            # Cloud sync engine
+│   │   ├── auth/            # Authentication service
+│   │   └── notification/    # Push notifications
 │   ├── hooks/               # Custom React hooks
 │   ├── context/             # React Context providers
 │   ├── utils/               # Utility functions
 │   ├── constants/           # App constants and theme
 │   ├── types/               # TypeScript definitions
 │   └── config/              # Configuration files
-├── assets/                  # Images, fonts, icons
-└── app.json                 # Expo configuration
+├── android/                 # Native Android project
+├── assets/                  # Images, icons
+├── store/                   # Play Store listing content
+├── app.config.js            # Dynamic Expo configuration
+└── eas.json                 # EAS Build configuration
 ```
-
-## Available Scripts
-
-- `npm start` - Start the Expo development server
-- `npm run android` - Run on Android emulator/device
-- `npm run ios` - Run on iOS simulator/device (Mac only)
-- `npm run web` - Run in web browser
 
 ## Configuration
 
@@ -114,50 +152,48 @@ fitness-tracker-app/
 
 Create a `.env` file with:
 ```
-EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your-client-id
-EXPO_PUBLIC_API_URL=http://localhost:3000/api
-EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=your-maps-key
+EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
+EXPO_PUBLIC_SUPABASE_URL=your-supabase-project-url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
-
-### Google OAuth Setup
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create or select your project
-3. Enable Google+ API
-4. Create OAuth 2.0 credentials (Web application)
-5. Add authorized redirect URIs (see AUTHENTICATION_GUIDE.md)
-6. Copy the Client ID to your `.env` file
 
 ### Google Maps Setup
 
 1. Get a Google Maps API key from [Google Cloud Console](https://console.cloud.google.com/)
 2. Enable Maps SDK for Android and iOS
-3. Add the API key to `.env`
+3. **For production**: Restrict the API key to your app's package name and SHA-1 fingerprint
+4. Add the API key to `.env`
+
+### Supabase Setup
+
+1. Create a project at [Supabase](https://supabase.com/)
+2. Copy the project URL and anon key to `.env`
+3. Run the database migrations from `supabase/migrations/`
 
 ## Permissions
 
-The app requires the following permissions:
-
-### iOS
-- Location (When In Use and Always)
-- Motion & Fitness
-
 ### Android
-- Fine Location
-- Coarse Location
-- Background Location
-- Activity Recognition
-- Foreground Service
+- Fine Location — real-time GPS tracking
+- Coarse Location — approximate positioning
+- Background Location — track with screen off
+- Activity Recognition — step counting
+- Foreground Service — background tracking notifications
 
 ## Design Guidelines
 
-The app follows a modern, clean design with:
 - **Primary Font**: Poppins
 - **Primary Color**: #6C63FF (Vibrant Purple)
 - **Spacing System**: 4px base unit
 - **Border Radius**: 12-20px for cards and buttons
+- **Dark Mode**: Full support with automatic switching
 
-See the design document for complete guidelines.
+## Privacy & Security
+
+- See [PRIVACY_POLICY.md](./PRIVACY_POLICY.md) for the full privacy policy
+- See [DATA_SAFETY.md](./DATA_SAFETY.md) for Play Store data safety information
+- API keys are loaded from environment variables, never hardcoded
+- Console logs are stripped from production builds
+- Network traffic is HTTPS-only in production
 
 ## License
 

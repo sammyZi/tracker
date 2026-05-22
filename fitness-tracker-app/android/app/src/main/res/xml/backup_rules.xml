@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Full Backup Rules for Android 6-11 (API 23-30)
+
+  Prevents Auto Backup from backing up AsyncStorage and other local data
+  so that uninstalling the app truly removes all local data.
+-->
+<full-backup-content>
+  <!-- Exclude all SharedPreferences (AsyncStorage uses these) -->
+  <exclude domain="sharedpref" path="." />
+  <!-- Exclude all databases -->
+  <exclude domain="database" path="." />
+  <!-- Exclude all internal files -->
+  <exclude domain="file" path="." />
+</full-backup-content>

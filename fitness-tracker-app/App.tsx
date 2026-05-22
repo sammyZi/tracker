@@ -1,16 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Animated } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts, useTheme, usePermissions } from './src/hooks';
 import { Text } from './src/components';
 import { AppNavigator } from './src/navigation';
 import { SettingsProvider, AuthProvider, SyncProvider, useAuth } from './src/context';
 import { SyncToastOverlay } from './src/components';
+import { ErrorBoundary } from './src/components/common/ErrorBoundary';
+import { PrivacyConsentScreen } from './src/screens/onboarding/PrivacyConsentScreen';
 import { PermissionsScreen } from './src/screens/onboarding/PermissionsScreen';
 import storageService from './src/services/storage/StorageService';
 import notificationService from './src/services/notification/NotificationService';
+import BatteryOptimizationService from './src/services/battery/BatteryOptimizationService';
 import { configurePerformance } from './src/utils/performance';
 
 // Keep the splash screen visible while we fetch resources
@@ -21,6 +25,9 @@ configurePerformance();
 
 // Minimum time (ms) to show splash screen for a premium feel
 const MIN_SPLASH_DURATION = 2000;
+
+// AsyncStorage key for privacy consent
+const PRIVACY_CONSENT_KEY = '@privacy_consent_accepted';
 
 function AppContent() {
   const { fontsLoaded, error } = useFonts();
@@ -34,6 +41,8 @@ function AppContent() {
   
   const { isLoading: authLoading } = useAuth();
 
+  const [showPrivacyConsent, setShowPrivacyConsent] = useState(false);
+  const [privacyConsentChecked, setPrivacyConsentChecked] = useState(false);
   const [showPermissions, setShowPermissions] = useState(false);
   const [storageInitialized, setStorageInitialized] = useState(false);
   const [notificationsInitialized, setNotificationsInitialized] = useState(false);
@@ -76,11 +85,58 @@ function AppContent() {
     initNotifications();
   }, []);
 
+  // Check privacy consent status and determine onboarding flow
   useEffect(() => {
-    if (!permissionsLoading && !hasRequestedPermissions) {
+    const checkPrivacyConsent = async () => {
+      try {
+        const accepted = await AsyncStorage.getItem(PRIVACY_CONSENT_KEY);
+        if (accepted !== 'true') {
+          // Privacy not yet accepted — show consent screen first
+          setShowPrivacyConsent(true);
+        }
+      } catch (error) {
+        console.error('Error checking privacy consent:', error);
+      } finally {
+        setPrivacyConsentChecked(true);
+      }
+    };
+    checkPrivacyConsent();
+  }, []);
+
+  // After privacy is accepted, check if permissions need to be shown
+  useEffect(() => {
+    if (privacyConsentChecked && !showPrivacyConsent && !permissionsLoading && !hasRequestedPermissions) {
       setShowPermissions(true);
     }
-  }, [permissionsLoading, hasRequestedPermissions]);
+  }, [privacyConsentChecked, showPrivacyConsent, permissionsLoading, hasRequestedPermissions]);
+
+  // Request battery optimization exemption on app start (Android only).
+  // Opens the system "Allow unrestricted battery" dialog ONLY when the
+  // app is currently restricted. If already unrestricted, nothing happens.
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    // Only request after the app is fully ready and onboarding is done
+    if (!splashHidden || showPrivacyConsent || showPermissions) return;
+
+    const requestBatteryExemption = async () => {
+      try {
+        const isOptimized = await BatteryOptimizationService.isAppBatteryOptimized();
+        if (isOptimized) {
+          // App is restricted — open system dialog
+          await BatteryOptimizationService.openBatteryOptimizationSettings();
+          // Mark as unrestricted after the user returns from the dialog
+          await BatteryOptimizationService.markBatteryOptimizationDisabled();
+        }
+      } catch (error) {
+        // Silently fail — don't block the user
+        console.log('Battery optimization request skipped:', error);
+      }
+    };
+
+    // Small delay so the app is fully visible first
+    const timer = setTimeout(requestBatteryExemption, 1500);
+    return () => clearTimeout(timer);
+  }, [splashHidden, showPrivacyConsent, showPermissions]);
 
   // All services must be ready AND minimum time must have elapsed
   const allServicesReady = 
@@ -88,7 +144,8 @@ function AppContent() {
     !permissionsLoading && 
     storageInitialized && 
     notificationsInitialized &&
-    !authLoading;
+    !authLoading &&
+    privacyConsentChecked;
 
   const isAppReady = allServicesReady && minTimeElapsed;
 
@@ -114,6 +171,25 @@ function AppContent() {
           Error loading fonts
         </Text>
       </SafeAreaView>
+    );
+  }
+
+  // Show privacy consent screen first (before permissions)
+  if (showPrivacyConsent) {
+    return (
+      <>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <PrivacyConsentScreen
+          onAccept={async () => {
+            try {
+              await AsyncStorage.setItem(PRIVACY_CONSENT_KEY, 'true');
+            } catch (e) {
+              console.error('Error saving privacy consent:', e);
+            }
+            setShowPrivacyConsent(false);
+          }}
+        />
+      </>
     );
   }
 
@@ -143,26 +219,23 @@ function AppContent() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <SettingsProvider>
-        <AuthProvider>
-          <SyncProvider>
-            <AppContent />
-          </SyncProvider>
-        </AuthProvider>
-      </SettingsProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <SettingsProvider>
+          <AuthProvider>
+            <SyncProvider>
+              <AppContent />
+            </SyncProvider>
+          </AuthProvider>
+        </SettingsProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
 
 
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   container: {
     flex: 1,
   },

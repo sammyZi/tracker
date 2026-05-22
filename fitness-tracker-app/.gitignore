@@ -49,3 +49,13 @@ android/.gradle/
 android/app/build/
 android/build/
 android/local.properties
+
+# Release keystore (NEVER commit these!)
+android/app/release.keystore
+android/app/*.keystore
+!android/app/debug.keystore
+android/keystore.properties
+
+# Build artifacts
+*.aab
+*.apk
