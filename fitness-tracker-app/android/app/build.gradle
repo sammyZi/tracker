@@ -88,8 +88,23 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
-// Google Maps API key from gradle properties or environment
-def googleMapsApiKey = findProperty('GOOGLE_MAPS_API_KEY') ?: System.getenv('GOOGLE_MAPS_API_KEY') ?: ''
+// Google Maps API key resolution priority:
+//   1. gradle.properties (for CI/CD or local overrides)
+//   2. .env file at project root (gitignored, safe for secrets)
+//   3. System environment variable
+//   4. Empty string (map won't render but app won't crash)
+def gradleProp = findProperty('GOOGLE_MAPS_API_KEY')?.toString()?.trim()
+def envFileKey = ''
+def envFile = rootProject.file('../.env')
+if (envFile.exists()) {
+    envFile.eachLine { line ->
+        def trimmed = line.trim()
+        if (trimmed.startsWith('GOOGLE_MAPS_API_KEY=') && !trimmed.startsWith('#')) {
+            envFileKey = trimmed.split('=', 2)[1].trim()
+        }
+    }
+}
+def googleMapsApiKey = (gradleProp ?: null) ?: envFileKey ?: System.getenv('GOOGLE_MAPS_API_KEY') ?: ''
 
 android {
     ndkVersion rootProject.ext.ndkVersion

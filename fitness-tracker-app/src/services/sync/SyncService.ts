@@ -473,17 +473,30 @@ class SyncService {
 
   /**
    * Upload all local activities to Supabase.
+   *
+   * IMPORTANT: `StorageService.getActivities()` returns lightweight index
+   * summaries with `route: []` (routes are stripped to keep the index small).
+   * We MUST read the full activity data (with route) from individual storage
+   * keys via `getActivity(id)`, otherwise we'd overwrite Supabase route data
+   * with empty arrays.
    */
   async syncAllActivities(): Promise<SyncResult> {
     if (!this._userId) return makeSyncResult(0, 1, [{ itemId: 'all', operation: 'upload', code: 'CONFIG_MISSING', error: 'Not initialized', timestamp: Date.now() }]);
 
-    const activities = await StorageService.getActivities();
+    // Get summaries (no route) just for the list of IDs
+    const summaries = await StorageService.getActivities();
     let synced = 0;
     let failed = 0;
     const errors: SyncError[] = [];
 
-    for (const activity of activities) {
-      const result = await this.syncActivity(activity);
+    for (const summary of summaries) {
+      // Read full activity data (with route) from individual storage key
+      const fullActivity = await StorageService.getActivity(summary.id);
+      if (!fullActivity) {
+        logger.warn(`Activity ${summary.id} not found in individual storage, skipping`);
+        continue;
+      }
+      const result = await this.syncActivity(fullActivity);
       synced += result.syncedCount;
       failed += result.failedCount;
       errors.push(...result.errors);
@@ -568,25 +581,34 @@ class SyncService {
     }
 
     // ── Phase 2: Upload activities ─────────────────────────────────────
-    for (const activity of activities) {
+    // NOTE: `activities` from getActivities() are index summaries with route:[].
+    // We must read each full activity (with route) from individual storage keys.
+    for (const summary of activities) {
       reportProgress(`Uploading activity ${migratedActivities + 1}/${activities.length}…`);
       try {
-        const row = activityToRow(activity, this._userId!);
+        // Read full activity data (with route) from individual storage key
+        const fullActivity = await StorageService.getActivity(summary.id);
+        if (!fullActivity) {
+          logger.warn(`Activity ${summary.id} not found in individual storage, skipping`);
+          completedItems++;
+          continue;
+        }
+        const row = activityToRow(fullActivity, this._userId!);
         const { error } = await supabase
           .from('activities')
           .upsert(row, { onConflict: 'id' });
 
         if (error) {
           const mappedError = mapSyncError(error.message, 'upload');
-          logger.warn(`Activity migration error for ${activity.id}`, mappedError);
-          errors.push(`Activity ${activity.id}: ${mappedError.message}`);
+          logger.warn(`Activity migration error for ${summary.id}`, mappedError);
+          errors.push(`Activity ${summary.id}: ${mappedError.message}`);
         } else {
           migratedActivities++;
         }
       } catch (err: any) {
         const mappedError = mapSyncError(err, 'upload');
-        logger.error(`Activity migration exception for ${activity.id}`, err);
-        errors.push(`Activity ${activity.id}: ${mappedError.message}`);
+        logger.error(`Activity migration exception for ${summary.id}`, err);
+        errors.push(`Activity ${summary.id}: ${mappedError.message}`);
       }
       completedItems++;
       reportProgress(`Activities: ${migratedActivities}/${activities.length}`);
