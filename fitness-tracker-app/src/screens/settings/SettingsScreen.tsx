@@ -13,12 +13,11 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  Switch,
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Text } from '../../components/common';
+import { Text, AnimatedToggle } from '../../components/common';
 import { SyncStatusIndicator } from '../../components/sync';
 import { Spacing, BorderRadius } from '../../constants/theme';
 import { useSettings } from '../../context';
@@ -155,7 +154,7 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
     return intervalOption.label;
   };
 
-  const switchTrackColor = { false: colors.border, true: colors.primary };
+
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
@@ -258,11 +257,11 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             description="Hear distance and pace updates"
             colors={colors}
             right={
-              <Switch
+              <AnimatedToggle
                 value={settings.audioAnnouncements}
                 onValueChange={toggleAudioAnnouncements}
-                trackColor={switchTrackColor}
-                thumbColor="#fff"
+                activeColor={colors.primary}
+                inactiveColor={colors.border}
               />
             }
             isLast={!settings.audioAnnouncements}
@@ -300,11 +299,11 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             description="Automatically pause when stationary"
             colors={colors}
             right={
-              <Switch
+              <AnimatedToggle
                 value={settings.autoPause}
                 onValueChange={(v) => updateSettings({ autoPause: v })}
-                trackColor={switchTrackColor}
-                thumbColor="#fff"
+                activeColor={colors.primary}
+                inactiveColor={colors.border}
               />
             }
             isLast={!settings.autoPause}
@@ -365,11 +364,11 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             description="Feel haptic feedback for actions"
             colors={colors}
             right={
-              <Switch
+              <AnimatedToggle
                 value={isHapticEnabled}
                 onValueChange={toggleHapticFeedback}
-                trackColor={switchTrackColor}
-                thumbColor="#fff"
+                activeColor={colors.primary}
+                inactiveColor={colors.border}
               />
             }
             isLast

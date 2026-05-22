@@ -103,6 +103,7 @@ const HistoryStackNavigator = () => {
       <HistoryStack.Screen
         name="ActivityHistory"
         component={ActivityHistoryScreen}
+        options={{ freezeOnBlur: false }}
       />
       <HistoryStack.Screen
         name="ActivityDetail"

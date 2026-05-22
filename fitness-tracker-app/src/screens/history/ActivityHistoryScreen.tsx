@@ -14,6 +14,7 @@ import {
   StatusBar,
   Platform,
   ActivityIndicator,
+  InteractionManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -61,6 +62,24 @@ const ActivityHistoryScreenComponent: React.FC<ActivityHistoryScreenProps> = ({ 
     };
     loadSettings();
   }, []);
+
+  // Disable scroll during navigation transitions to prevent flicker.
+  // The spring animation transform and scroll gesture conflict on the native thread.
+  const [scrollEnabled, setScrollEnabled] = useState(true);
+
+  useEffect(() => {
+    const unsubBlur = navigation.addListener('blur', () => {
+      setScrollEnabled(false);
+    });
+    const unsubFocus = navigation.addListener('focus', () => {
+      // Wait for the back-transition spring animation to fully settle
+      const handle = InteractionManager.runAfterInteractions(() => {
+        setScrollEnabled(true);
+      });
+      return () => handle.cancel();
+    });
+    return () => { unsubBlur(); unsubFocus(); };
+  }, [navigation]);
 
   // Silent refresh when coming back after delete (no loading indicator)
   useFocusEffect(
@@ -292,11 +311,12 @@ const ActivityHistoryScreenComponent: React.FC<ActivityHistoryScreenProps> = ({ 
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
           showsVerticalScrollIndicator={false}
-          removeClippedSubviews={Platform.OS === 'android'}
+          scrollEnabled={scrollEnabled}
+          removeClippedSubviews={false}
           maxToRenderPerBatch={10}
           updateCellsBatchingPeriod={50}
           initialNumToRender={10}
-          windowSize={10}
+          windowSize={15}
           disableIntervalMomentum={true}
         />
       )}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Platform } from 'react-native';
+import { StyleSheet, Platform, Animated as RNAnimated, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -48,6 +49,58 @@ function AppContent() {
   const [notificationsInitialized, setNotificationsInitialized] = useState(false);
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [splashHidden, setSplashHidden] = useState(false);
+
+  // ── Theme transition animation ─────────────────────────────────────────────
+  const themeOverlayOpacity = useRef(new RNAnimated.Value(0)).current;
+  const iconScale = useRef(new RNAnimated.Value(0)).current;
+  const iconOpacity = useRef(new RNAnimated.Value(0)).current;
+  const prevThemeRef = useRef(isDark);
+  const [overlayColor, setOverlayColor] = useState(colors.background);
+  const [themeIcon, setThemeIcon] = useState<'sunny' | 'moon'>('sunny');
+  const [showOverlay, setShowOverlay] = useState(false);
+
+  useEffect(() => {
+    if (prevThemeRef.current !== isDark) {
+      const oldBg = prevThemeRef.current ? '#121212' : '#F8F9FA';
+      setOverlayColor(oldBg);
+      setThemeIcon(isDark ? 'moon' : 'sunny');
+      setShowOverlay(true);
+
+      // Reset
+      themeOverlayOpacity.setValue(1);
+      iconScale.setValue(0.5);
+      iconOpacity.setValue(0);
+
+      // Icon gently fades in + scales up
+      RNAnimated.timing(iconOpacity, {
+        toValue: 1, duration: 300, useNativeDriver: true,
+      }).start();
+      RNAnimated.spring(iconScale, {
+        toValue: 1, damping: 16, stiffness: 90, mass: 1, useNativeDriver: true,
+      }).start();
+
+      // After React repaints, smoothly reveal new theme
+      setTimeout(() => {
+        RNAnimated.timing(themeOverlayOpacity, {
+          toValue: 0, duration: 500, useNativeDriver: true,
+        }).start();
+
+        // Icon gently drifts out
+        setTimeout(() => {
+          RNAnimated.parallel([
+            RNAnimated.timing(iconOpacity, {
+              toValue: 0, duration: 350, useNativeDriver: true,
+            }),
+            RNAnimated.timing(iconScale, {
+              toValue: 1.4, duration: 350, useNativeDriver: true,
+            }),
+          ]).start(() => setShowOverlay(false));
+        }, 300);
+      }, 400);
+
+      prevThemeRef.current = isDark;
+    }
+  }, [isDark]);
 
   // Start minimum splash timer
   useEffect(() => {
@@ -213,6 +266,55 @@ function AppContent() {
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <AppNavigator />
       <SyncToastOverlay />
+      {/* Theme transition: background crossfade + sun/moon icon */}
+      {showOverlay && (
+        <>
+          <RNAnimated.View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                backgroundColor: overlayColor,
+                opacity: themeOverlayOpacity,
+                zIndex: 9999,
+              },
+            ]}
+          />
+          <RNAnimated.View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                zIndex: 10000,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: iconOpacity,
+              },
+            ]}
+          >
+            <RNAnimated.View
+              style={{
+                transform: [{ scale: iconScale }],
+              }}
+            >
+              <View style={[
+                themeStyles.iconGlow,
+                {
+                  backgroundColor: themeIcon === 'sunny'
+                    ? 'rgba(255, 184, 0, 0.15)'
+                    : 'rgba(140, 120, 255, 0.15)',
+                },
+              ]}>
+                <Ionicons
+                  name={themeIcon}
+                  size={80}
+                  color={themeIcon === 'sunny' ? '#FFA500' : '#C4B5FD'}
+                />
+              </View>
+            </RNAnimated.View>
+          </RNAnimated.View>
+        </>
+      )}
     </>
   );
 }
@@ -238,5 +340,15 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+});
+
+const themeStyles = StyleSheet.create({
+  iconGlow: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
