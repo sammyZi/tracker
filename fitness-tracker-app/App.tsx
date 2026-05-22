@@ -53,76 +53,54 @@ function AppContent() {
   // ── Theme transition animation ─────────────────────────────────────────────
   const themeOverlayOpacity = useRef(new RNAnimated.Value(0)).current;
   const iconScale = useRef(new RNAnimated.Value(0)).current;
-  const iconRotation = useRef(new RNAnimated.Value(0)).current;
   const iconOpacity = useRef(new RNAnimated.Value(0)).current;
   const prevThemeRef = useRef(isDark);
   const [overlayColor, setOverlayColor] = useState(colors.background);
   const [themeIcon, setThemeIcon] = useState<'sunny' | 'moon'>('sunny');
+  const [showOverlay, setShowOverlay] = useState(false);
 
   useEffect(() => {
     if (prevThemeRef.current !== isDark) {
       const oldBg = prevThemeRef.current ? '#121212' : '#F8F9FA';
       setOverlayColor(oldBg);
       setThemeIcon(isDark ? 'moon' : 'sunny');
+      setShowOverlay(true);
 
-      // Reset all values
+      // Reset
       themeOverlayOpacity.setValue(1);
-      iconScale.setValue(0);
-      iconRotation.setValue(0);
-      iconOpacity.setValue(1);
+      iconScale.setValue(0.5);
+      iconOpacity.setValue(0);
 
-      // Background crossfade — runs independently
-      RNAnimated.sequence([
-        RNAnimated.delay(150),
+      // Icon gently fades in + scales up
+      RNAnimated.timing(iconOpacity, {
+        toValue: 1, duration: 300, useNativeDriver: true,
+      }).start();
+      RNAnimated.spring(iconScale, {
+        toValue: 1, damping: 16, stiffness: 90, mass: 1, useNativeDriver: true,
+      }).start();
+
+      // After React repaints, smoothly reveal new theme
+      setTimeout(() => {
         RNAnimated.timing(themeOverlayOpacity, {
-          toValue: 0,
-          duration: 350,
-          useNativeDriver: true,
-        }),
-      ]).start();
+          toValue: 0, duration: 500, useNativeDriver: true,
+        }).start();
 
-      // Icon choreography — strict sequence so iconScale is never double-driven
-      RNAnimated.sequence([
-        // Phase 1: Icon springs in + rotates
-        RNAnimated.parallel([
-          RNAnimated.spring(iconScale, {
-            toValue: 1,
-            damping: 14,
-            stiffness: 150,
-            mass: 0.7,
-            useNativeDriver: true,
-          }),
-          RNAnimated.timing(iconRotation, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-        ]),
-        // Phase 2: Brief hold
-        RNAnimated.delay(100),
-        // Phase 3: Icon bursts out and fades
-        RNAnimated.parallel([
-          RNAnimated.timing(iconOpacity, {
-            toValue: 0,
-            duration: 250,
-            useNativeDriver: true,
-          }),
-          RNAnimated.timing(iconScale, {
-            toValue: 1.6,
-            duration: 250,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]).start();
+        // Icon gently drifts out
+        setTimeout(() => {
+          RNAnimated.parallel([
+            RNAnimated.timing(iconOpacity, {
+              toValue: 0, duration: 350, useNativeDriver: true,
+            }),
+            RNAnimated.timing(iconScale, {
+              toValue: 1.4, duration: 350, useNativeDriver: true,
+            }),
+          ]).start(() => setShowOverlay(false));
+        }, 300);
+      }, 400);
 
       prevThemeRef.current = isDark;
     }
   }, [isDark]);
-
-  const iconSpin = iconRotation.interpolate({
-    inputRange: [0, 1],
-    outputRange: isDark ? ['0deg', '-120deg'] : ['0deg', '120deg'],
-  });
 
   // Start minimum splash timer
   useEffect(() => {
@@ -289,46 +267,54 @@ function AppContent() {
       <AppNavigator />
       <SyncToastOverlay />
       {/* Theme transition: background crossfade + sun/moon icon */}
-      <RNAnimated.View
-        pointerEvents="none"
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            backgroundColor: overlayColor,
-            opacity: themeOverlayOpacity,
-            zIndex: 9999,
-          },
-        ]}
-      />
-      <RNAnimated.View
-        pointerEvents="none"
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            zIndex: 10000,
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: iconOpacity,
-          },
-        ]}
-      >
-        <RNAnimated.View
-          style={{
-            transform: [
-              { scale: iconScale },
-              { rotate: iconSpin },
-            ],
-          }}
-        >
-          <View style={themeStyles.iconGlow}>
-            <Ionicons
-              name={themeIcon}
-              size={72}
-              color={themeIcon === 'sunny' ? '#FFB800' : '#B8A9FF'}
-            />
-          </View>
-        </RNAnimated.View>
-      </RNAnimated.View>
+      {showOverlay && (
+        <>
+          <RNAnimated.View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                backgroundColor: overlayColor,
+                opacity: themeOverlayOpacity,
+                zIndex: 9999,
+              },
+            ]}
+          />
+          <RNAnimated.View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                zIndex: 10000,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: iconOpacity,
+              },
+            ]}
+          >
+            <RNAnimated.View
+              style={{
+                transform: [{ scale: iconScale }],
+              }}
+            >
+              <View style={[
+                themeStyles.iconGlow,
+                {
+                  backgroundColor: themeIcon === 'sunny'
+                    ? 'rgba(255, 184, 0, 0.15)'
+                    : 'rgba(140, 120, 255, 0.15)',
+                },
+              ]}>
+                <Ionicons
+                  name={themeIcon}
+                  size={80}
+                  color={themeIcon === 'sunny' ? '#FFA500' : '#C4B5FD'}
+                />
+              </View>
+            </RNAnimated.View>
+          </RNAnimated.View>
+        </>
+      )}
     </>
   );
 }
@@ -359,10 +345,9 @@ const styles = StyleSheet.create({
 
 const themeStyles = StyleSheet.create({
   iconGlow: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     alignItems: 'center',
     justifyContent: 'center',
   },
