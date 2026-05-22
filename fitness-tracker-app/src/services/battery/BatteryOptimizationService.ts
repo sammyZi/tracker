@@ -405,8 +405,8 @@ class BatteryOptimizationService {
     );
   }
 
-  private async getPackageName(): Promise<string> {
-    // Get package name from app.json
+  private getPackageName(): string {
+    // Return the correct package name for the Stride app
     return 'com.fittracker.app';
   }
 

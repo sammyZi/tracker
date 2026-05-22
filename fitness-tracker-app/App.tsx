@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Animated } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, useTheme, usePermissions } from './src/hooks';
@@ -10,6 +10,7 @@ import { SettingsProvider, AuthProvider, SyncProvider, useAuth } from './src/con
 import { SyncToastOverlay } from './src/components';
 import { PermissionsScreen } from './src/screens/onboarding/PermissionsScreen';
 import storageService from './src/services/storage/StorageService';
+import notificationService from './src/services/notification/NotificationService';
 import { configurePerformance } from './src/utils/performance';
 
 // Keep the splash screen visible while we fetch resources
@@ -18,6 +19,8 @@ SplashScreen.preventAutoHideAsync();
 // Initialize performance optimizations for 120 FPS
 configurePerformance();
 
+// Minimum time (ms) to show splash screen for a premium feel
+const MIN_SPLASH_DURATION = 2000;
 
 function AppContent() {
   const { fontsLoaded, error } = useFonts();
@@ -33,34 +36,72 @@ function AppContent() {
 
   const [showPermissions, setShowPermissions] = useState(false);
   const [storageInitialized, setStorageInitialized] = useState(false);
+  const [notificationsInitialized, setNotificationsInitialized] = useState(false);
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+  const [splashHidden, setSplashHidden] = useState(false);
+
+  // Start minimum splash timer
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinTimeElapsed(true);
+    }, MIN_SPLASH_DURATION);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Initialize storage on app launch
-  React.useEffect(() => {
+  useEffect(() => {
     const initStorage = async () => {
       try {
         await storageService.initialize();
-        setStorageInitialized(true);
       } catch (error) {
         console.error('Failed to initialize storage:', error);
-        setStorageInitialized(true); // Continue anyway
+      } finally {
+        setStorageInitialized(true);
       }
     };
     initStorage();
   }, []);
 
-  React.useEffect(() => {
+  // Initialize notifications
+  useEffect(() => {
+    const initNotifications = async () => {
+      try {
+        await notificationService.initialize();
+      } catch (error) {
+        console.error('Failed to initialize notifications:', error);
+      } finally {
+        setNotificationsInitialized(true);
+      }
+    };
+    initNotifications();
+  }, []);
+
+  useEffect(() => {
     if (!permissionsLoading && !hasRequestedPermissions) {
       setShowPermissions(true);
     }
   }, [permissionsLoading, hasRequestedPermissions]);
 
-  const isAppReady = (fontsLoaded || error) && !permissionsLoading && storageInitialized && !authLoading;
+  // All services must be ready AND minimum time must have elapsed
+  const allServicesReady = 
+    (fontsLoaded || error) && 
+    !permissionsLoading && 
+    storageInitialized && 
+    notificationsInitialized &&
+    !authLoading;
 
-  React.useEffect(() => {
-    if (isAppReady) {
-      SplashScreen.hideAsync();
+  const isAppReady = allServicesReady && minTimeElapsed;
+
+  // Hide splash screen when everything is ready
+  useEffect(() => {
+    if (isAppReady && !splashHidden) {
+      const hideSplash = async () => {
+        await SplashScreen.hideAsync();
+        setSplashHidden(true);
+      };
+      hideSplash();
     }
-  }, [isAppReady]);
+  }, [isAppReady, splashHidden]);
 
   if (!isAppReady) {
     return null;
