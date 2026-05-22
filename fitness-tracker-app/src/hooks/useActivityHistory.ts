@@ -50,10 +50,14 @@ export const useActivityHistory = (
    * Load activities from storage with filters
    */
   const loadActivities = useCallback(
-    async (reset: boolean = false) => {
+    async (reset: boolean = false, silent: boolean = false) => {
       try {
         if (reset) {
-          setLoading(true);
+          // Only show loading spinner on first load (when no data yet).
+          // For subsequent reloads, keep existing data visible to avoid flicker.
+          if (!silent && allActivities.length === 0) {
+            setLoading(true);
+          }
           setPage(1);
           setError(null);
         }
@@ -97,7 +101,7 @@ export const useActivityHistory = (
         setRefreshing(false);
       }
     },
-    [dateRangeFilter, activityTypeFilter, page, itemsPerPage]
+    [dateRangeFilter, activityTypeFilter, page, itemsPerPage, allActivities.length]
   );
 
   /**
@@ -107,7 +111,7 @@ export const useActivityHistory = (
     if (!silent) {
       setRefreshing(true);
     }
-    await loadActivities(true);
+    await loadActivities(true, silent);
   }, [loadActivities]);
 
   /**
