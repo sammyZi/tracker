@@ -189,8 +189,9 @@ export class AuthService implements IAuthService {
    */
   async signInWithGoogle(): Promise<AuthResult> {
     try {
-      // Let Expo automatically handle the scheme (crucial for Expo Go vs Standalone)
-      const redirectUri = makeRedirectUri();
+      // Must specify scheme so native builds use "stride://" instead of
+      // the Expo Go proxy. Without this, the redirect never reaches the app.
+      const redirectUri = makeRedirectUri({ scheme: 'stride' });
       console.log('👉 GENERATED REDIRECT URI FOR SUPABASE:', redirectUri);
 
       // Get the OAuth URL from Supabase
@@ -210,8 +211,17 @@ export class AuthService implements IAuthService {
         };
       }
 
-      // Open the browser for Google login
-      const result = await WebBrowser.openAuthSessionAsync(oauthData.url, redirectUri);
+      // Warm up the browser on Android for faster auth flow
+      await WebBrowser.warmUpAsync();
+
+      let result: WebBrowser.WebBrowserAuthSessionResult;
+      try {
+        // Open the browser for Google login
+        result = await WebBrowser.openAuthSessionAsync(oauthData.url, redirectUri);
+      } finally {
+        // Always cool down, even on failure
+        await WebBrowser.coolDownAsync();
+      }
 
       if (result.type !== 'success' || !result.url) {
         return {
@@ -220,13 +230,18 @@ export class AuthService implements IAuthService {
         };
       }
 
-      // Extract tokens from the redirect URL fragment
-      const url = new URL(result.url);
-      const params = new URLSearchParams(url.hash.substring(1)); // remove #
+      // Extract tokens from the redirect URL fragment.
+      // NOTE: `new URL()` does NOT support custom schemes (e.g. "stride://")
+      // on Hermes/React Native — it throws a TypeError. Parse manually instead.
+      const returnedUrl = result.url;
+      const hashIndex = returnedUrl.indexOf('#');
+      const fragment = hashIndex !== -1 ? returnedUrl.substring(hashIndex + 1) : '';
+      const params = new URLSearchParams(fragment);
       const accessToken = params.get('access_token');
       const refreshToken = params.get('refresh_token');
 
       if (!accessToken) {
+        logger.warn('No access token in redirect URL', { url: returnedUrl });
         return {
           success: false,
           error: { code: 'AUTH_UNKNOWN_ERROR', message: 'No access token received from Google' },

@@ -61,8 +61,8 @@ const AuthStackNavigator: React.FC<{
         gestureEnabled: false,
         cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
         transitionSpec: {
-          open: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 100, restDisplacementThreshold: 40 } },
-          close: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 100, restDisplacementThreshold: 40 } },
+          open: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 1, restDisplacementThreshold: 0.4 } },
+          close: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 1, restDisplacementThreshold: 0.4 } },
         },
       }}
       initialRouteName="Login"
@@ -95,8 +95,8 @@ const HistoryStackNavigator = () => {
         gestureEnabled: true,
         cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
         transitionSpec: {
-          open: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 100, restDisplacementThreshold: 40 } },
-          close: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 100, restDisplacementThreshold: 40 } },
+          open: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 1, restDisplacementThreshold: 0.4 } },
+          close: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 1, restDisplacementThreshold: 0.4 } },
         },
       }}
     >
@@ -122,8 +122,8 @@ const ProfileStackNavigator = () => {
         gestureEnabled: true,
         cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
         transitionSpec: {
-          open: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 100, restDisplacementThreshold: 40 } },
-          close: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 100, restDisplacementThreshold: 40 } },
+          open: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 1, restDisplacementThreshold: 0.4 } },
+          close: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 1, restDisplacementThreshold: 0.4 } },
         },
       }}
     >
@@ -164,8 +164,8 @@ const SettingsStackNavigator = () => {
         gestureEnabled: true,
         cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
         transitionSpec: {
-          open: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 100, restDisplacementThreshold: 40 } },
-          close: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 100, restDisplacementThreshold: 40 } },
+          open: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 1, restDisplacementThreshold: 0.4 } },
+          close: { animation: 'spring', config: { damping: 25, stiffness: 160, mass: 0.9, restSpeedThreshold: 1, restDisplacementThreshold: 0.4 } },
         },
       }}
     >

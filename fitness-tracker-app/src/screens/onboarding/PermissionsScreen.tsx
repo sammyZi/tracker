@@ -1,6 +1,7 @@
 /**
  * PermissionsScreen
- * Requests all necessary permissions when app first loads
+ * Requests all necessary permissions when app first loads.
+ * Premium onboarding UI with staggered animations.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -15,11 +16,18 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  FadeInDown,
+  FadeIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import * as Location from 'expo-location';
 import { Pedometer } from 'expo-sensors';
 import { Text, Button, ConfirmModal } from '../../components/common';
 import { useConfirmModal } from '../../hooks/useConfirmModal';
-import { Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Spacing, BorderRadius } from '../../constants/theme';
 import BatteryOptimizationService from '../../services/battery/BatteryOptimizationService';
 import { useTheme } from '../../hooks';
 
@@ -27,15 +35,28 @@ interface PermissionsScreenProps {
   onComplete: () => void;
 }
 
+type PermState = 'pending' | 'granted' | 'denied';
+
 interface PermissionStatus {
-  location: 'pending' | 'granted' | 'denied';
-  backgroundLocation: 'pending' | 'granted' | 'denied';
-  motion: 'pending' | 'granted' | 'denied';
+  location: PermState;
+  backgroundLocation: PermState;
+  motion: PermState;
+}
+
+// ── Permission card config ──────────────────────────────────────────────────
+
+interface PermCardConfig {
+  key: keyof PermissionStatus;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  title: string;
+  subtitle: string;
+  description: string;
 }
 
 export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete }) => {
   const { colors, isDark } = useTheme();
-  const styles = React.useMemo(() => createStyles(colors), [colors]);
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const { modalState, showConfirm, hideModal } = useConfirmModal();
   const [permissions, setPermissions] = useState<PermissionStatus>({
     location: 'pending',
@@ -44,34 +65,73 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
   });
   const [isRequesting, setIsRequesting] = useState(false);
 
+  // Button pulse animation
+  const buttonScale = useSharedValue(1);
+
+  useEffect(() => {
+    const pulse = setInterval(() => {
+      if (!isRequesting) {
+        buttonScale.value = withSpring(1.02, { damping: 8 });
+        setTimeout(() => {
+          buttonScale.value = withSpring(1, { damping: 8 });
+        }, 400);
+      }
+    }, 3000);
+    return () => clearInterval(pulse);
+  }, [isRequesting]);
+
+  const buttonAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: buttonScale.value }],
+  }));
+
+  const permCards: PermCardConfig[] = [
+    {
+      key: 'location',
+      icon: 'location',
+      color: colors.primary,
+      title: 'Location Access',
+      subtitle: 'Required',
+      description: 'Track your route, distance, speed, and pace during workouts.',
+    },
+    {
+      key: 'backgroundLocation',
+      icon: 'navigate',
+      color: colors.info,
+      title: 'Background Location',
+      subtitle: 'Recommended',
+      description: 'Keep tracking when screen is off or using other apps.',
+    },
+    {
+      key: 'motion',
+      icon: 'footsteps',
+      color: colors.success,
+      title: 'Motion & Fitness',
+      subtitle: 'Optional',
+      description: 'Step counting and activity recognition for detailed insights.',
+    },
+  ];
+
   useEffect(() => {
     checkExistingPermissions();
   }, []);
 
   const checkExistingPermissions = async () => {
     try {
-      // Check location permission
       const { status: locationStatus } = await Location.getForegroundPermissionsAsync();
-      
-      // Check background location permission
       const { status: backgroundStatus } = await Location.getBackgroundPermissionsAsync();
-      
-      // Check motion permission (pedometer)
-      let motionStatus: 'granted' | 'denied' | 'pending' = 'pending';
+
+      let motionStatus: PermState = 'pending';
       try {
         if (Platform.OS === 'android' && Platform.Version >= 29) {
-          // Android 10+ requires ACTIVITY_RECOGNITION permission
           const granted = await PermissionsAndroid.check(
             PermissionsAndroid.PERMISSIONS.ACTIVITY_RECOGNITION
           );
           motionStatus = granted ? 'granted' : 'pending';
         } else {
-          // iOS or older Android - just check if pedometer is available
           const available = await Pedometer.isAvailableAsync();
           motionStatus = available ? 'granted' : 'denied';
         }
-      } catch (error) {
-        console.log('Error checking motion permission:', error);
+      } catch {
         motionStatus = 'denied';
       }
 
@@ -81,7 +141,6 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
         motion: motionStatus,
       });
 
-      // If all permissions granted, auto-complete
       if (
         locationStatus === 'granted' &&
         backgroundStatus === 'granted' &&
@@ -98,7 +157,7 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
     setIsRequesting(true);
 
     try {
-      // 1. Request foreground location permission
+      // 1. Foreground location
       const { status: locationStatus } = await Location.requestForegroundPermissionsAsync();
       setPermissions(prev => ({
         ...prev,
@@ -116,17 +175,16 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
         return;
       }
 
-      // 2. Request background location permission
+      // 2. Background location
       const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
       setPermissions(prev => ({
         ...prev,
         backgroundLocation: backgroundStatus === 'granted' ? 'granted' : 'denied',
       }));
 
-      // 3. Request motion/activity recognition permission
+      // 3. Motion/activity recognition
       try {
         if (Platform.OS === 'android' && Platform.Version >= 29) {
-          // Android 10+ requires ACTIVITY_RECOGNITION permission
           const granted = await PermissionsAndroid.request(
             PermissionsAndroid.PERMISSIONS.ACTIVITY_RECOGNITION,
             {
@@ -136,40 +194,30 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
               buttonNegative: 'Cancel',
             }
           );
-          
           setPermissions(prev => ({
             ...prev,
             motion: granted === PermissionsAndroid.RESULTS.GRANTED ? 'granted' : 'denied',
           }));
         } else {
-          // iOS or older Android - check if pedometer is available
           const available = await Pedometer.isAvailableAsync();
           setPermissions(prev => ({
             ...prev,
             motion: available ? 'granted' : 'denied',
           }));
         }
-      } catch (error) {
-        console.log('Motion sensor not available:', error);
-        setPermissions(prev => ({
-          ...prev,
-          motion: 'denied',
-        }));
+      } catch {
+        setPermissions(prev => ({ ...prev, motion: 'denied' }));
       }
 
-      // Check if all critical permissions granted
+      // If location granted, proceed
       if (locationStatus === 'granted') {
-        // Request battery optimization exemption on Android before completing
         if (Platform.OS === 'android' && backgroundStatus === 'granted') {
           try {
-            // Skip cooldown during onboarding to ensure user sees the prompt
             await BatteryOptimizationService.ensureBatteryExemption('tracking', true);
           } catch (error) {
             console.log('Battery optimization request error:', error);
           }
         }
-        
-        // Location is critical, others are optional
         setTimeout(onComplete, 500);
       }
     } catch (error) {
@@ -185,18 +233,19 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
     }
   };
 
-  const getPermissionIcon = (status: 'pending' | 'granted' | 'denied') => {
+  const getStatusConfig = (status: PermState) => {
     switch (status) {
       case 'granted':
-        return <Ionicons name="checkmark-circle" size={24} color={colors.success} />;
+        return { icon: 'checkmark-circle' as const, color: colors.success, label: 'Granted' };
       case 'denied':
-        return <Ionicons name="close-circle" size={24} color={colors.error} />;
+        return { icon: 'close-circle' as const, color: colors.error, label: 'Denied' };
       default:
-        return <Ionicons name="help-circle" size={24} color={colors.textSecondary} />;
+        return { icon: 'ellipse-outline' as const, color: colors.textSecondary + '60', label: 'Pending' };
     }
   };
 
   const allGranted = permissions.location === 'granted';
+  const grantedCount = Object.values(permissions).filter(v => v === 'granted').length;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -207,142 +256,131 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="shield-checkmark" size={64} color={colors.primary} />
+        <Animated.View entering={FadeInDown.duration(500).delay(100)} style={styles.header}>
+          <View style={styles.iconRing}>
+            <Ionicons name="key" size={40} color={colors.primary} />
           </View>
-          <Text variant="extraLarge" weight="bold" color={colors.textPrimary} align="center">
-            Welcome to Stride
+          <Text variant="large" weight="bold" color={colors.textPrimary} align="center">
+            Set Up Permissions
           </Text>
           <Text variant="regular" color={colors.textSecondary} align="center" style={styles.subtitle}>
-            To provide accurate activity tracking, we need a few permissions. Your data stays private and secure on your device.
+            Stride needs a few permissions for accurate tracking
           </Text>
+        </Animated.View>
+
+        {/* Progress indicator */}
+        <Animated.View entering={FadeIn.duration(400).delay(250)} style={styles.progressRow}>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${(grantedCount / 3) * 100}%`, backgroundColor: colors.primary }]} />
+          </View>
+          <Text variant="small" color={colors.textSecondary} style={styles.progressLabel}>
+            {grantedCount}/3 granted
+          </Text>
+        </Animated.View>
+
+        {/* Permission Cards */}
+        <View style={styles.permList}>
+          {permCards.map((card, index) => {
+            const status = getStatusConfig(permissions[card.key]);
+            const isGranted = permissions[card.key] === 'granted';
+
+            return (
+              <Animated.View
+                key={card.key}
+                entering={FadeInDown.duration(400).delay(300 + index * 100)}
+              >
+                <View style={[
+                  styles.permCard,
+                  isGranted && styles.permCardGranted,
+                ]}>
+                  {/* Left icon */}
+                  <View style={[styles.permIconWrap, { backgroundColor: card.color + '12' }]}>
+                    <Ionicons name={card.icon} size={24} color={card.color} />
+                  </View>
+
+                  {/* Content */}
+                  <View style={styles.permContent}>
+                    <View style={styles.permTitleRow}>
+                      <Text variant="regular" weight="semiBold" color={colors.textPrimary}>
+                        {card.title}
+                      </Text>
+                      <View style={[styles.statusBadge, { backgroundColor: status.color + '15' }]}>
+                        <Ionicons name={status.icon} size={13} color={status.color} />
+                        <Text variant="small" style={{ color: status.color, fontSize: 10, fontWeight: '600' }}>
+                          {status.label}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text variant="small" color={colors.textSecondary} style={styles.permSubtitle}>
+                      {card.subtitle}
+                    </Text>
+                    <Text variant="small" color={colors.textSecondary} style={styles.permDescription}>
+                      {card.description}
+                    </Text>
+                  </View>
+                </View>
+              </Animated.View>
+            );
+          })}
         </View>
 
-        {/* Permissions List */}
-        <View style={styles.permissionsList}>
-          {/* Location Permission */}
-          <View style={styles.permissionCard}>
-            <View style={styles.permissionHeader}>
-              <View style={styles.permissionIconContainer}>
-                <Ionicons name="location" size={32} color={colors.primary} />
-              </View>
-              <View style={styles.permissionInfo}>
-                <Text variant="medium" weight="semiBold" color={colors.textPrimary}>
-                  Location Access
-                </Text>
-                <Text variant="small" color={colors.textSecondary}>
-                  Required
-                </Text>
-              </View>
-              {getPermissionIcon(permissions.location)}
-            </View>
-            <Text variant="small" color={colors.textSecondary} style={styles.permissionDescription}>
-              Essential for tracking your route, distance, speed, and pace during workouts. Without this, the app cannot function.
+        {/* Info cards */}
+        <Animated.View entering={FadeInDown.duration(400).delay(650)} style={styles.infoRow}>
+          <View style={styles.infoChip}>
+            <Ionicons name="lock-closed" size={16} color={colors.success} />
+            <Text variant="small" color={colors.textPrimary} style={styles.infoChipText}>
+              Privacy first — data stays on device
             </Text>
           </View>
-
-          {/* Background Location Permission */}
-          <View style={styles.permissionCard}>
-            <View style={styles.permissionHeader}>
-              <View style={styles.permissionIconContainer}>
-                <Ionicons name="navigate" size={32} color={colors.info} />
-              </View>
-              <View style={styles.permissionInfo}>
-                <Text variant="medium" weight="semiBold" color={colors.textPrimary}>
-                  Background Location
-                </Text>
-                <Text variant="small" color={colors.textSecondary}>
-                  Recommended
-                </Text>
-              </View>
-              {getPermissionIcon(permissions.backgroundLocation)}
-            </View>
-            <Text variant="small" color={colors.textSecondary} style={styles.permissionDescription}>
-              Allows continuous tracking when your screen is off or you're using other apps. Highly recommended for accurate workout data.
+          <View style={styles.infoChip}>
+            <Ionicons name="battery-charging" size={16} color={colors.primary} />
+            <Text variant="small" color={colors.textPrimary} style={styles.infoChipText}>
+              Battery optimized tracking
             </Text>
           </View>
-
-          {/* Motion Permission */}
-          <View style={styles.permissionCard}>
-            <View style={styles.permissionHeader}>
-              <View style={styles.permissionIconContainer}>
-                <Ionicons name="footsteps" size={32} color={colors.success} />
-              </View>
-              <View style={styles.permissionInfo}>
-                <Text variant="medium" weight="semiBold" color={colors.textPrimary}>
-                  Motion & Fitness
-                </Text>
-                <Text variant="small" color={colors.textSecondary}>
-                  Optional
-                </Text>
-              </View>
-              {getPermissionIcon(permissions.motion)}
-            </View>
-            <Text variant="small" color={colors.textSecondary} style={styles.permissionDescription}>
-              Enables step counting and activity recognition for more detailed workout insights. Optional but enhances your experience.
-            </Text>
-          </View>
-        </View>
-
-        {/* Privacy & Battery Note */}
-        <View style={styles.infoSection}>
-          <View style={styles.infoCard}>
-            <Ionicons name="lock-closed" size={24} color={colors.success} />
-            <View style={styles.infoContent}>
-              <Text variant="medium" weight="semiBold" color={colors.textPrimary}>
-                Privacy First
-              </Text>
-              <Text variant="small" color={colors.textSecondary} style={styles.infoText}>
-                All your data is stored locally on your device. We never collect, share, or sell your location data.
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.infoCard}>
-            <Ionicons name="battery-charging" size={24} color={colors.primary} />
-            <View style={styles.infoContent}>
-              <Text variant="medium" weight="semiBold" color={colors.textPrimary}>
-                Battery Optimized
-              </Text>
-              <Text variant="small" color={colors.textSecondary} style={styles.infoText}>
-                We use efficient GPS tracking and foreground services to minimize battery drain during workouts.
-              </Text>
-            </View>
-          </View>
-        </View>
+        </Animated.View>
       </ScrollView>
 
       {/* Action Buttons */}
-      <View style={styles.actions}>
+      <Animated.View entering={FadeInDown.duration(400).delay(750)} style={styles.actions}>
         {allGranted ? (
           <Button
             title="Continue"
             variant="primary"
+            size="large"
+            fullWidth
             onPress={onComplete}
-            style={styles.button}
+            icon={<Ionicons name="arrow-forward" size={18} color="#fff" />}
+            iconPosition="right"
           />
         ) : (
           <>
-            <Button
-              title={isRequesting ? "Requesting..." : "Grant Permissions"}
-              variant="primary"
-              onPress={requestAllPermissions}
-              disabled={isRequesting}
-              style={styles.button}
-            />
+            <Animated.View style={buttonAnimStyle}>
+              <Button
+                title={isRequesting ? "Requesting..." : "Grant Permissions"}
+                variant="primary"
+                size="large"
+                fullWidth
+                onPress={requestAllPermissions}
+                disabled={isRequesting}
+                loading={isRequesting}
+                icon={!isRequesting ? <Ionicons name="shield-checkmark" size={18} color="#fff" /> : undefined}
+                iconPosition="left"
+              />
+            </Animated.View>
             <TouchableOpacity
-              style={styles.skipButton}
+              style={styles.skipBtn}
               onPress={onComplete}
               disabled={isRequesting}
+              activeOpacity={0.6}
             >
-              <Text variant="regular" color={colors.textSecondary}>
+              <Text variant="regular" color={colors.textSecondary} style={styles.skipText}>
                 Skip for now
               </Text>
             </TouchableOpacity>
           </>
         )}
-      </View>
+      </Animated.View>
 
       <ConfirmModal
         visible={modalState.visible}
@@ -359,7 +397,9 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
+// ── Styles ───────────────────────────────────────────────────────────────────
+
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -368,86 +408,142 @@ const createStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: Spacing.xl,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xxl,
   },
+
+  // ── Header ──────────────────────────────────────────
   header: {
     alignItems: 'center',
-    marginBottom: Spacing.xxxl,
+    marginBottom: Spacing.xl,
   },
-  iconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: colors.primary + '15',
+  iconRing: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: colors.primary + '10',
+    borderWidth: 2,
+    borderColor: colors.primary + '20',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.lg,
   },
   subtitle: {
-    marginTop: Spacing.md,
-    lineHeight: 24,
+    marginTop: Spacing.xs,
+    lineHeight: 22,
+    opacity: 0.8,
   },
-  permissionsList: {
+
+  // ── Progress ────────────────────────────────────────
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.md,
     marginBottom: Spacing.xl,
   },
-  permissionCard: {
-    backgroundColor: colors.surface,
-    borderRadius: BorderRadius.large,
-    padding: Spacing.lg,
-    ...Shadows.small,
+  progressTrack: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.border,
+    overflow: 'hidden',
   },
-  permissionHeader: {
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  progressLabel: {
+    minWidth: 60,
+    textAlign: 'right',
+  },
+
+  // ── Permission Cards ────────────────────────────────
+  permList: {
+    gap: Spacing.sm,
+    marginBottom: Spacing.xl,
+  },
+  permCard: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  permissionIconContainer: {
-    width: 56,
-    height: 56,
+    backgroundColor: colors.surface,
     borderRadius: BorderRadius.medium,
-    backgroundColor: colors.background,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border + (isDark ? '' : '80'),
+  },
+  permCardGranted: {
+    borderColor: colors.success + '40',
+    backgroundColor: isDark ? colors.surface : colors.success + '04',
+  },
+  permIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.md,
   },
-  permissionInfo: {
+  permContent: {
     flex: 1,
   },
-  permissionDescription: {
-    marginTop: Spacing.sm,
-    lineHeight: 20,
-  },
-  infoSection: {
-    gap: Spacing.md,
-  },
-  infoCard: {
+  permTitleRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  permSubtitle: {
+    marginTop: 1,
+    opacity: 0.65,
+    fontSize: 11,
+  },
+  permDescription: {
+    marginTop: 6,
+    lineHeight: 18,
+    opacity: 0.85,
+  },
+
+  // ── Info chips ──────────────────────────────────────
+  infoRow: {
+    gap: Spacing.sm,
+  },
+  infoChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.surface,
-    borderRadius: BorderRadius.large,
-    padding: Spacing.lg,
-    gap: Spacing.md,
-    ...Shadows.small,
+    borderRadius: BorderRadius.medium,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    gap: Spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border + (isDark ? '' : '80'),
   },
-  infoContent: {
+  infoChipText: {
     flex: 1,
+    lineHeight: 18,
   },
-  infoText: {
-    marginTop: Spacing.xs,
-    lineHeight: 20,
-  },
+
+  // ── Actions ─────────────────────────────────────────
   actions: {
-    padding: Spacing.xl,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.lg,
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  button: {
-    marginBottom: Spacing.md,
-  },
-  skipButton: {
+  skipBtn: {
     alignItems: 'center',
     paddingVertical: Spacing.md,
+    marginTop: Spacing.xs,
+  },
+  skipText: {
+    opacity: 0.7,
   },
 });
