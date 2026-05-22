@@ -4,6 +4,13 @@
  * Provides logging functionality that sanitizes sensitive information
  * such as passwords, tokens, and email addresses from log outputs.
  *
+ * In production builds, console.* calls are stripped by the
+ * `transform-remove-console` Babel plugin. This logger provides an
+ * additional layer of safety by:
+ *  - Sanitizing data before it reaches console.*
+ *  - Providing a `fatal()` method for crash-level events
+ *  - Checking __DEV__ to suppress verbose logs in production
+ *
  * Requirements: 9.4, 9.5, 10.4
  */
 
@@ -48,27 +55,34 @@ export function sanitize(data: any): any {
 }
 
 export const logger = {
+  /** Informational logging — suppressed in production. */
   log: (message: string, data?: any) => {
+    if (!__DEV__) return;
     if (data) {
       console.log(`[INFO] ${message}`, sanitize(data));
     } else {
       console.log(`[INFO] ${message}`);
     }
   },
+
+  /** Warning-level logging — suppressed in production. */
   warn: (message: string, data?: any) => {
+    if (!__DEV__) return;
     if (data) {
       console.warn(`[WARN] ${message}`, sanitize(data));
     } else {
       console.warn(`[WARN] ${message}`);
     }
   },
+
+  /** Error-level logging — always logged (sanitized). */
   error: (message: string, error?: any) => {
     let sanitizedError = error;
     if (error && typeof error === 'object') {
       sanitizedError = sanitize({
         message: error.message,
         code: error.code,
-        stack: error.stack,
+        stack: __DEV__ ? error.stack : undefined,
         ...error
       });
     }
@@ -78,5 +92,19 @@ export const logger = {
     } else {
       console.error(`[ERROR] ${message}`);
     }
-  }
+  },
+
+  /**
+   * Fatal-level logging for crash events.
+   * Always logged regardless of environment.
+   * Use this in ErrorBoundary and top-level catch handlers.
+   */
+  fatal: (message: string, data?: any) => {
+    const sanitized = data ? sanitize(data) : undefined;
+    if (sanitized) {
+      console.error(`[FATAL] ${message}`, sanitized);
+    } else {
+      console.error(`[FATAL] ${message}`);
+    }
+  },
 };

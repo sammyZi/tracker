@@ -30,7 +30,7 @@ const defaultSettings: UserSettings = {
   autoPause: false,
   autoPauseSensitivity: 'medium',
   mapType: 'standard',
-  theme: 'light',
+  theme: 'auto',
   hapticFeedback: true,
 };
 

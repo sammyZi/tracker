@@ -138,13 +138,6 @@ class LocationService {
       if (!hasBackgroundPermission) {
         throw new Error('Background location permissions not granted. Please enable "Always" location access in settings.');
       }
-
-      // Check battery optimization before starting background tracking
-      const batteryExempted = await batteryOptimizationService.checkBeforeTracking();
-      if (!batteryExempted) {
-        console.warn('Battery optimization is enabled, tracking may be interrupted');
-        // Continue anyway, but user has been warned
-      }
     }
 
     try {
@@ -188,8 +181,17 @@ class LocationService {
    * Start background location tracking
    */
   private async startBackgroundTracking(): Promise<void> {
-    // Request battery optimization exemption before starting background tracking
-    await batteryOptimizationService.ensureBatteryExemption('tracking');
+    // Silently request battery optimization exemption if still restricted.
+    // Opens the system dialog directly — no custom modal.
+    try {
+      const isOptimized = await batteryOptimizationService.isAppBatteryOptimized();
+      if (isOptimized) {
+        await batteryOptimizationService.openBatteryOptimizationSettings();
+        await batteryOptimizationService.markBatteryOptimizationDisabled();
+      }
+    } catch {
+      // Don't block tracking if battery check fails
+    }
 
     // Set up callback for background location updates
     setBackgroundLocationCallback((location: Location) => {

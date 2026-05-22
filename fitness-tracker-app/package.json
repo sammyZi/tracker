@@ -9,7 +9,13 @@
     "web": "expo start --web",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "typecheck": "tsc --noEmit",
+    "prebuild": "expo prebuild",
+    "build:preview": "eas build --profile preview --platform android",
+    "build:android": "eas build --profile production --platform android",
+    "submit:android": "eas submit --profile production --platform android",
+    "build:local": "eas build --profile production --platform android --local"
   },
   "dependencies": {
     "@expo-google-fonts/poppins": "^0.4.1",

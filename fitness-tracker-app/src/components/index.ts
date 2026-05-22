@@ -6,6 +6,7 @@
 // Common components
 export { Text, Button, Card, Input } from './common';
 export { EmptyState } from './common/EmptyState';
+export { ErrorBoundary } from './common/ErrorBoundary';
 
 // Map components
 export { LiveRouteMap, AnimatedLocationMarker, StaticRouteMap } from './map';
