@@ -4,7 +4,8 @@ import { useNavigation } from '@react-navigation/native';
 import { Card } from '../common/Card';
 import { Text } from '../common/Text';
 import { ActivityCard } from '../activity/ActivityCard';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Spacing, BorderRadius } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 import { Activity, UnitSystem } from '../../types';
 
 interface MonthlyCalendarCardProps {
@@ -15,6 +16,7 @@ interface MonthlyCalendarCardProps {
 const DAYS_OF_WEEK = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 export const MonthlyCalendarCard: React.FC<MonthlyCalendarCardProps> = ({ activities, units }) => {
+  const { colors } = useTheme();
   const navigation = useNavigation<any>();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(new Date().toDateString());
@@ -91,20 +93,20 @@ export const MonthlyCalendarCard: React.FC<MonthlyCalendarCardProps> = ({ activi
         {/* Header: Month Navigation */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handlePrevMonth} style={styles.navButton}>
-            <Text variant="small" weight="semiBold" color={Colors.primary}>&lt; Prev</Text>
+            <Text variant="small" weight="semiBold" color={colors.primary}>&lt; Prev</Text>
           </TouchableOpacity>
-          <Text variant="mediumLarge" weight="bold" color={Colors.textPrimary}>
+          <Text variant="mediumLarge" weight="bold" color={colors.textPrimary}>
             {monthName}
           </Text>
           <TouchableOpacity onPress={handleNextMonth} style={styles.navButton}>
-            <Text variant="small" weight="semiBold" color={Colors.primary}>Next &gt;</Text>
+            <Text variant="small" weight="semiBold" color={colors.primary}>Next &gt;</Text>
           </TouchableOpacity>
         </View>
 
         {/* Days Header */}
         <View style={styles.daysHeaderRow}>
           {DAYS_OF_WEEK.map((day, i) => (
-             <Text key={`day_${i}`} variant="small" weight="semiBold" color={Colors.textSecondary} style={styles.dayCol}>
+             <Text key={`day_${i}`} variant="small" weight="semiBold" color={colors.textSecondary} style={styles.dayCol}>
                {day}
              </Text>
           ))}
@@ -118,15 +120,14 @@ export const MonthlyCalendarCard: React.FC<MonthlyCalendarCardProps> = ({ activi
                 if (!day) return <View key={`empty_${wIndex}_${dIndex}`} style={styles.dayCell} />;
                 
                 const isSelected = selectedDate === day.dateStr;
-                const isTodaySelected = day.isToday && isSelected;
                 const isTodayNotSelected = day.isToday && !isSelected;
 
                 // Determine text color explicitly
-                let textColor = Colors.textPrimary;
+                let textColor = colors.textPrimary;
                 if (isSelected) {
                   textColor = '#fff';
                 } else if (day.isToday) {
-                  textColor = Colors.primary;
+                  textColor = colors.primary;
                 }
 
                 return (
@@ -137,8 +138,8 @@ export const MonthlyCalendarCard: React.FC<MonthlyCalendarCardProps> = ({ activi
                   >
                     <View style={[
                       styles.dateCircle,
-                      isSelected && styles.dateCircleSelected,
-                      isTodayNotSelected && styles.dateCircleToday
+                      isSelected && { backgroundColor: colors.primary },
+                      isTodayNotSelected && { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.primary }
                     ]}>
                       <Text 
                         variant="medium" 
@@ -154,7 +155,8 @@ export const MonthlyCalendarCard: React.FC<MonthlyCalendarCardProps> = ({ activi
                       {day.hasActivity && (
                         <View style={[
                           styles.activityDot,
-                          isSelected && styles.activityDotSelected
+                          { backgroundColor: colors.success },
+                          isSelected && { backgroundColor: colors.success }
                         ]} />
                       )}
                     </View>
@@ -169,12 +171,12 @@ export const MonthlyCalendarCard: React.FC<MonthlyCalendarCardProps> = ({ activi
       {/* Activities List for Selected Day */}
       {selectedDate && (
         <View style={styles.activitiesList}>
-          <Text variant="medium" weight="semiBold" style={styles.selectedDateTitle}>
+          <Text variant="medium" weight="semiBold" color={colors.textSecondary} style={styles.selectedDateTitle}>
             {new Date(selectedDate).toLocaleDateString('default', { weekday: 'long', month: 'long', day: 'numeric'})}
           </Text>
           
           {selectedDayActivities.length === 0 ? (
-            <Text variant="small" color={Colors.textSecondary} style={styles.noActivity}>
+            <Text variant="small" color={colors.textSecondary} style={styles.noActivity}>
               No activities on this day.
             </Text>
           ) : (
@@ -241,14 +243,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     overflow: 'hidden',
   },
-  dateCircleSelected: {
-    backgroundColor: Colors.primary,
-  },
-  dateCircleToday: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.primary,
-  },
   indicatorContainer: {
     height: 6,
     width: '100%',
@@ -258,18 +252,13 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: Colors.success,
     overflow: 'hidden',
-  },
-  activityDotSelected: { // make it pop even if selected Date is white
-    backgroundColor: Colors.success,
   },
   activitiesList: {
     paddingHorizontal: Spacing.lg,
     marginTop: Spacing.sm,
   },
   selectedDateTitle: {
-    color: Colors.textSecondary,
     marginBottom: Spacing.md,
     marginLeft: Spacing.xs, // alignment
   },

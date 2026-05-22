@@ -7,7 +7,8 @@ import React, { useMemo } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { Activity, UnitSystem } from '../../types';
-import { Colors, Spacing } from '../../constants/theme';
+import { Spacing } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 import { Text } from '../common/Text';
 
 interface PaceChartProps {
@@ -23,6 +24,8 @@ export const PaceChart: React.FC<PaceChartProps> = ({
   units,
   period,
 }) => {
+  const { colors } = useTheme();
+
   const chartData = useMemo(() => {
     if (activities.length === 0) {
       return {
@@ -77,7 +80,7 @@ export const PaceChart: React.FC<PaceChartProps> = ({
   if (activities.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Text variant="medium" color={Colors.textSecondary} align="center">
+        <Text variant="medium" color={colors.textSecondary} align="center">
           No activity data available for this period
         </Text>
       </View>
@@ -91,9 +94,9 @@ export const PaceChart: React.FC<PaceChartProps> = ({
         width={screenWidth - 32}
         height={220}
         chartConfig={{
-          backgroundColor: Colors.surface,
-          backgroundGradientFrom: Colors.surface,
-          backgroundGradientTo: Colors.surface,
+          backgroundColor: colors.surface,
+          backgroundGradientFrom: colors.surface,
+          backgroundGradientTo: colors.surface,
           decimalPlaces: 1,
           color: (opacity = 1) => `rgba(0, 217, 163, ${opacity})`,
           labelColor: (opacity = 1) => `rgba(99, 110, 114, ${opacity})`,
@@ -103,11 +106,11 @@ export const PaceChart: React.FC<PaceChartProps> = ({
           propsForDots: {
             r: '4',
             strokeWidth: '2',
-            stroke: Colors.success,
+            stroke: colors.success,
           },
           propsForBackgroundLines: {
             strokeDasharray: '',
-            stroke: Colors.border,
+            stroke: colors.border,
             strokeWidth: 1,
           },
         }}

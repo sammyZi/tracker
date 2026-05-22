@@ -9,7 +9,8 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text } from '../common/Text';
 import { Activity, UnitSystem } from '../../types';
 import { formatDistance, formatDuration, formatPace, formatDate } from '../../utils/formatting';
-import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 
 interface ActivityCardProps {
   activity: Activity;
@@ -22,17 +23,19 @@ const ActivityCardComponent: React.FC<ActivityCardProps> = ({
   onPress,
   units = 'metric',
 }) => {
+  const { colors } = useTheme();
+
   const getActivityIcon = () => {
     return 'fitness';
   };
 
   const getActivityColor = () => {
-    return Colors.primary;
+    return colors.primary;
   };
 
   return (
     <TouchableOpacity
-      style={styles.card}
+      style={[styles.card, { backgroundColor: colors.surface }]}
       onPress={onPress}
       activeOpacity={0.7}
     >
@@ -50,13 +53,13 @@ const ActivityCardComponent: React.FC<ActivityCardProps> = ({
               <Text
                 variant="small"
                 weight="semiBold"
-                color={Colors.textPrimary}
+                color={colors.textPrimary}
                 style={styles.typeText}
               >
                 {activity.type.charAt(0).toUpperCase() + activity.type.slice(1)}
               </Text>
             </View>
-            <Text variant="extraSmall" color={Colors.textSecondary}>
+            <Text variant="extraSmall" color={colors.textSecondary}>
               {formatDate(activity.startTime, 'short')}
             </Text>
           </View>
@@ -65,30 +68,30 @@ const ActivityCardComponent: React.FC<ActivityCardProps> = ({
           <View style={styles.metrics}>
             {/* Distance */}
             <View style={styles.metric}>
-              <Text variant="medium" weight="bold" color={Colors.textPrimary}>
+              <Text variant="medium" weight="bold" color={colors.textPrimary}>
                 {formatDistance(activity.distance, units)}
               </Text>
-              <Text variant="extraSmall" color={Colors.textSecondary}>
+              <Text variant="extraSmall" color={colors.textSecondary}>
                 Distance
               </Text>
             </View>
 
             {/* Duration */}
             <View style={styles.metric}>
-              <Text variant="medium" weight="bold" color={Colors.textPrimary}>
+              <Text variant="medium" weight="bold" color={colors.textPrimary}>
                 {formatDuration(activity.duration)}
               </Text>
-              <Text variant="extraSmall" color={Colors.textSecondary}>
+              <Text variant="extraSmall" color={colors.textSecondary}>
                 Duration
               </Text>
             </View>
 
             {/* Pace */}
             <View style={styles.metric}>
-              <Text variant="medium" weight="bold" color={Colors.textPrimary}>
+              <Text variant="medium" weight="bold" color={colors.textPrimary}>
                 {formatPace(activity.averagePace, units).split(' ')[0]}
               </Text>
-              <Text variant="extraSmall" color={Colors.textSecondary}>
+              <Text variant="extraSmall" color={colors.textSecondary}>
                 Pace
               </Text>
             </View>
@@ -97,14 +100,14 @@ const ActivityCardComponent: React.FC<ActivityCardProps> = ({
           {/* Footer with steps and calories */}
           <View style={styles.footer}>
             <View style={styles.footerItem}>
-              <Ionicons name="footsteps" size={13} color={Colors.textSecondary} />
-              <Text variant="extraSmall" color={Colors.textSecondary} style={styles.footerText}>
+              <Ionicons name="footsteps" size={13} color={colors.textSecondary} />
+              <Text variant="extraSmall" color={colors.textSecondary} style={styles.footerText}>
                 {activity.steps.toLocaleString()}
               </Text>
             </View>
             <View style={styles.footerItem}>
-              <Ionicons name="flame" size={13} color={Colors.textSecondary} />
-              <Text variant="extraSmall" color={Colors.textSecondary} style={styles.footerText}>
+              <Ionicons name="flame" size={13} color={colors.textSecondary} />
+              <Text variant="extraSmall" color={colors.textSecondary} style={styles.footerText}>
                 {Math.round(activity.calories)} cal
               </Text>
             </View>
@@ -127,7 +130,6 @@ export const ActivityCard = React.memo(ActivityCardComponent, (prevProps, nextPr
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
     borderRadius: BorderRadius.large,
     marginBottom: Spacing.md,
     overflow: 'hidden',

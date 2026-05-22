@@ -8,7 +8,7 @@
  * Requirements: 1.1, 1.3, 1.4, 1.5
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -18,11 +18,12 @@ import {
   TouchableOpacity,
   Modal,
   Image,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Input, Button, Text } from '../../components/common';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Spacing, BorderRadius } from '../../constants/theme';
 import { useAuth } from '../../context';
 import { useTheme } from '../../hooks';
 
@@ -54,7 +55,8 @@ function validateConfirmPassword(password: string, confirm: string): string | un
 
 export const SignupScreen: React.FC<{ navigation: any; route?: any }> = ({ navigation, route }) => {
   const { signUp, signInWithGoogle } = useAuth();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const onSkip = route?.params?.onSkip;
 
   // Form state
@@ -124,7 +126,8 @@ export const SignupScreen: React.FC<{ navigation: any; route?: any }> = ({ navig
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -151,8 +154,8 @@ export const SignupScreen: React.FC<{ navigation: any; route?: any }> = ({ navig
           <View style={styles.form}>
             {serverError && (
               <View style={styles.errorBanner}>
-                <Ionicons name="alert-circle" size={18} color={Colors.error} />
-                <Text variant="small" color={Colors.error} style={styles.errorBannerText}>
+                <Ionicons name="alert-circle" size={18} color={colors.error} />
+                <Text variant="small" color={colors.error} style={styles.errorBannerText}>
                   {serverError}
                 </Text>
               </View>
@@ -284,10 +287,10 @@ export const SignupScreen: React.FC<{ navigation: any; route?: any }> = ({ navig
       {onSkip && (
         <View style={[styles.skipFooter, { borderTopColor: colors.border }]}>
           <TouchableOpacity onPress={onSkip} activeOpacity={0.7} style={styles.skipButton}>
-            <Text variant="regular" weight="semiBold" color={Colors.textSecondary} style={{ opacity: 0.7 }}>
+            <Text variant="regular" weight="semiBold" color={colors.textSecondary} style={{ opacity: 0.7 }}>
               Continue without account
             </Text>
-            <Ionicons name="arrow-forward" size={16} color={Colors.textSecondary} style={{ marginLeft: 6, opacity: 0.7 }} />
+            <Ionicons name="arrow-forward" size={16} color={colors.textSecondary} style={{ marginLeft: 6, opacity: 0.7 }} />
           </TouchableOpacity>
         </View>
       )}
@@ -301,8 +304,8 @@ export const SignupScreen: React.FC<{ navigation: any; route?: any }> = ({ navig
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
-            <View style={[styles.modalIcon, { backgroundColor: Colors.success + '15' }]}>
-              <Ionicons name="mail-outline" size={40} color={Colors.success} />
+            <View style={[styles.modalIcon, { backgroundColor: colors.success + '15' }]}>
+              <Ionicons name="mail-outline" size={40} color={colors.success} />
             </View>
             <Text variant="large" weight="bold" color={colors.textPrimary} style={styles.modalTitle}>
               Check Your Email
@@ -332,9 +335,10 @@ export const SignupScreen: React.FC<{ navigation: any; route?: any }> = ({ navig
 
 // ── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background,
   },
   flex: {
     flex: 1,
@@ -371,7 +375,7 @@ const styles = StyleSheet.create({
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.error + '12',
+    backgroundColor: colors.error + '12',
     borderRadius: BorderRadius.medium,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,

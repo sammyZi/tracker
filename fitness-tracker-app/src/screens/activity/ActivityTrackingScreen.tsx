@@ -23,18 +23,18 @@ import BatteryOptimizationService from '../../services/battery/BatteryOptimizati
 import { useConfirmModal } from '../../hooks/useConfirmModal';
 import { useSettings } from '../../context';
 import { formatDuration, formatDistance, formatPace, formatCalories } from '../../utils';
-import { Colors } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 import { ActivityType } from '../../types';
 
 const { width } = Dimensions.get('window');
 
 // Helper: color-coded pace indicator
-const getPaceColor = (paceSecondsPerKm: number): string => {
-  if (paceSecondsPerKm <= 0) return Colors.textSecondary;
+const getPaceColor = (paceSecondsPerKm: number, colors: any): string => {
+  if (paceSecondsPerKm <= 0) return colors.textSecondary;
   if (paceSecondsPerKm < 360) return '#00D9A3';  // Fast — green
   if (paceSecondsPerKm < 600) return '#4ECDC4';  // Good — teal
-  if (paceSecondsPerKm < 900) return Colors.warning;  // Moderate — orange
-  return Colors.error;  // Slow — red
+  if (paceSecondsPerKm < 900) return colors.warning;  // Moderate — orange
+  return colors.error;  // Slow — red
 };
 
 interface ActivityTrackingScreenProps {
@@ -44,6 +44,7 @@ interface ActivityTrackingScreenProps {
 export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ onBack }) => {
   const { modalState, showConfirm, hideModal } = useConfirmModal();
   const { settings } = useSettings();
+  const { colors, isDark } = useTheme();
   const [activityType] = useState<ActivityType>('activity');
   const [isTracking, setIsTracking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -99,7 +100,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
           onPress: () => { b.onPress?.(); hideModal(); },
           style: (b.style as 'default' | 'cancel' | 'destructive') || 'default',
         })),
-        { icon: 'battery-half-outline', iconColor: Colors.warning },
+        { icon: 'battery-half-outline', iconColor: colors.warning },
       );
     });
 
@@ -157,7 +158,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
               style: 'destructive',
             },
           ],
-          { icon: 'alert-circle', iconColor: Colors.warning }
+          { icon: 'alert-circle', iconColor: colors.warning }
         );
         return true; // Prevent default back behavior
       } else {
@@ -345,7 +346,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
         'Error',
         'Failed to start tracking',
         [{ text: 'OK', onPress: hideModal, style: 'default' }],
-        { icon: 'alert-circle', iconColor: Colors.error }
+        { icon: 'alert-circle', iconColor: colors.error }
       );
     }
   };
@@ -356,7 +357,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
         'Error',
         'No activity in progress',
         [{ text: 'OK', onPress: hideModal, style: 'default' }],
-        { icon: 'alert-circle', iconColor: Colors.error }
+        { icon: 'alert-circle', iconColor: colors.error }
       );
       return;
     }
@@ -373,7 +374,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
         'Error',
         'Failed to pause activity',
         [{ text: 'OK', onPress: hideModal, style: 'default' }],
-        { icon: 'alert-circle', iconColor: Colors.error }
+        { icon: 'alert-circle', iconColor: colors.error }
       );
     }
   };
@@ -392,7 +393,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
         'Error',
         'Failed to resume activity',
         [{ text: 'OK', onPress: hideModal, style: 'default' }],
-        { icon: 'alert-circle', iconColor: Colors.error }
+        { icon: 'alert-circle', iconColor: colors.error }
       );
     }
   };
@@ -433,7 +434,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
                   'Success',
                   'Activity saved!',
                   [{ text: 'OK', onPress: hideModal, style: 'default' }],
-                  { icon: 'checkmark-circle', iconColor: Colors.success }
+                  { icon: 'checkmark-circle', iconColor: colors.success }
                 );
               }, 300);
             } catch (error) {
@@ -445,7 +446,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
           style: 'default',
         },
       ],
-      { icon: 'stop-circle', iconColor: Colors.error }
+      { icon: 'stop-circle', iconColor: colors.error }
     );
   };
 
@@ -486,11 +487,11 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
     }
   };
 
-  const currentPaceColor = getPaceColor(currentPace);
+  const currentPaceColor = getPaceColor(currentPace, colors);
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       {/* Map */}
       <View style={styles.mapContainer}>
@@ -508,21 +509,21 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
         <View style={styles.statusRow} pointerEvents="box-none">
           {!isTracking && onBack && (
             <TouchableOpacity
-              style={styles.backButton}
+              style={[styles.backButton, { backgroundColor: isDark ? 'rgba(30, 30, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)' }]}
               onPress={onBack}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+              <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
           )}
           {isTracking && !isPaused && (
-            <View style={styles.statusBadge}>
+            <View style={[styles.statusBadge, { backgroundColor: colors.success }]}>
               <View style={styles.recordingDot} />
               <Text style={styles.statusText}>Recording</Text>
             </View>
           )}
           {isPaused && (
-            <View style={[styles.statusBadge, styles.pausedBadge]}>
+            <View style={[styles.statusBadge, { backgroundColor: colors.warning }]}>
               <Ionicons name="pause" size={14} color="#fff" style={{ marginRight: 4 }} />
               <Text style={styles.statusText}>Paused</Text>
             </View>
@@ -530,20 +531,20 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
         </View>
 
         {/* Hero: Duration | Distance */}
-        <View style={styles.heroRow}>
+        <View style={[styles.heroRow, { backgroundColor: isDark ? 'rgba(30, 30, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)' }]}>
           <View style={styles.heroMetric}>
-            <Text style={styles.heroValue}>{formatDuration(duration)}</Text>
-            <Text style={styles.heroLabel}>Duration</Text>
+            <Text style={[styles.heroValue, { color: colors.textPrimary }]}>{formatDuration(duration)}</Text>
+            <Text style={[styles.heroLabel, { color: colors.textSecondary }]}>Duration</Text>
           </View>
-          <View style={styles.heroDivider} />
+          <View style={[styles.heroDivider, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }]} />
           <View style={styles.heroMetric}>
-            <Text style={styles.heroValue}>{formatDistance(distance, settings.units)}</Text>
-            <Text style={styles.heroLabel}>Distance</Text>
+            <Text style={[styles.heroValue, { color: colors.textPrimary }]}>{formatDistance(distance, settings.units)}</Text>
+            <Text style={[styles.heroLabel, { color: colors.textSecondary }]}>Distance</Text>
           </View>
         </View>
 
         {/* Secondary stats */}
-        <View style={styles.statsStrip}>
+        <View style={[styles.statsStrip, { backgroundColor: isDark ? 'rgba(40, 40, 40, 0.90)' : 'rgba(255, 255, 255, 0.92)' }]}>
           <View style={styles.stripItem}>
             <View style={styles.stripIconRow}>
               <Ionicons name="flash" size={14} color={currentPaceColor} />
@@ -554,42 +555,52 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
             <Text style={[styles.stripValue, { color: currentPaceColor }]}>
               {currentPace > 0 ? formatPace(currentPace, settings.units).split(' ')[0] : '--:--'}
             </Text>
-            <Text style={styles.stripLabel}>Pace</Text>
+            <Text style={[styles.stripLabel, { color: colors.textSecondary }]}>Pace</Text>
           </View>
 
-          <View style={styles.stripDivider} />
+          <View style={[styles.stripDivider, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)' }]} />
 
           <View style={styles.stripItem}>
-            <Ionicons name="speedometer-outline" size={14} color={Colors.primary} />
-            <Text style={styles.stripValue}>
+            <Ionicons name="speedometer-outline" size={14} color={colors.primary} />
+            <Text style={[styles.stripValue, { color: colors.textPrimary }]}>
               {averagePace > 0 ? formatPace(averagePace, settings.units).split(' ')[0] : '--:--'}
             </Text>
-            <Text style={styles.stripLabel}>Avg Pace</Text>
+            <Text style={[styles.stripLabel, { color: colors.textSecondary }]}>Avg Pace</Text>
           </View>
 
-          <View style={styles.stripDivider} />
+          <View style={[styles.stripDivider, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)' }]} />
 
           <View style={styles.stripItem}>
-            <Ionicons name="footsteps-outline" size={14} color={Colors.primary} />
-            <Text style={styles.stripValue}>{steps.toLocaleString()}</Text>
-            <Text style={styles.stripLabel}>Steps</Text>
+            <Ionicons name="footsteps-outline" size={14} color={colors.primary} />
+            <Text style={[styles.stripValue, { color: colors.textPrimary }]}>{steps.toLocaleString()}</Text>
+            <Text style={[styles.stripLabel, { color: colors.textSecondary }]}>Steps</Text>
           </View>
 
-          <View style={styles.stripDivider} />
+          <View style={[styles.stripDivider, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)' }]} />
 
           <View style={styles.stripItem}>
             <Ionicons name="flame-outline" size={14} color="#FF6B6B" />
-            <Text style={styles.stripValue}>{Math.round(calories)}</Text>
-            <Text style={styles.stripLabel}>Cal</Text>
+            <Text style={[styles.stripValue, { color: colors.textPrimary }]}>{Math.round(calories)}</Text>
+            <Text style={[styles.stripLabel, { color: colors.textSecondary }]}>Cal</Text>
           </View>
         </View>
       </SafeAreaView>
 
       {/* ── Bottom Controls ────────────────────────────────────── */}
-      <SafeAreaView style={styles.bottomContainer} edges={['bottom']}>
+      <SafeAreaView style={[styles.bottomContainer, { backgroundColor: isDark ? 'rgba(30, 30, 30, 0.96)' : 'rgba(255, 255, 255, 0.96)' }]} edges={['bottom']}>
         {!isTracking ? (
           <View style={styles.startContainer}>
-            <TouchableOpacity style={styles.startButton} onPress={handleStart} activeOpacity={0.85}>
+            <TouchableOpacity
+              style={[
+                styles.startButton,
+                {
+                  backgroundColor: colors.primary,
+                  shadowColor: colors.primary,
+                },
+              ]}
+              onPress={handleStart}
+              activeOpacity={0.85}
+            >
               <Ionicons name="play" size={26} color="#fff" />
               <Text style={styles.startButtonText}>Start Activity</Text>
             </TouchableOpacity>
@@ -597,7 +608,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
         ) : (
           <View style={styles.controlsRow}>
             <TouchableOpacity
-              style={[styles.controlButton, styles.pauseButton]}
+              style={[styles.controlButton, styles.pauseButton, { backgroundColor: colors.warning }]}
               onPress={isPaused ? handleResume : handlePause}
               activeOpacity={0.85}
             >
@@ -612,7 +623,7 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.controlButton, styles.stopButton]}
+              style={[styles.controlButton, styles.stopButton, { backgroundColor: colors.error }]}
               onPress={handleStop}
               activeOpacity={0.85}
             >
@@ -641,7 +652,6 @@ export const ActivityTrackingScreen: React.FC<ActivityTrackingScreenProps> = ({ 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     paddingTop:
       Platform.OS === 'android'
         ? (StatusBar.currentHeight || 20)
@@ -669,7 +679,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -681,7 +690,6 @@ const styles = StyleSheet.create({
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.success,
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 20,
@@ -690,9 +698,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 6,
     elevation: 4,
-  },
-  pausedBadge: {
-    backgroundColor: Colors.warning,
   },
   recordingDot: {
     width: 8,
@@ -710,7 +715,6 @@ const styles = StyleSheet.create({
   // ── Hero metrics ────────────────────────────────────────────────────────
   heroRow: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 20,
     paddingVertical: 16,
     paddingHorizontal: 12,
@@ -729,13 +733,11 @@ const styles = StyleSheet.create({
   heroValue: {
     fontSize: 26,
     fontFamily: 'Poppins_700Bold',
-    color: Colors.textPrimary,
     letterSpacing: -0.5,
   },
   heroLabel: {
     fontSize: 10,
     fontFamily: 'Poppins_500Medium',
-    color: Colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginTop: 2,
@@ -743,13 +745,11 @@ const styles = StyleSheet.create({
   heroDivider: {
     width: 1,
     height: 32,
-    backgroundColor: 'rgba(0,0,0,0.1)',
   },
 
   // ── Secondary stats strip ───────────────────────────────────────────────
   statsStrip: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
     borderRadius: 14,
     paddingVertical: 10,
     paddingHorizontal: 6,
@@ -773,20 +773,17 @@ const styles = StyleSheet.create({
   stripValue: {
     fontSize: 14,
     fontFamily: 'Poppins_700Bold',
-    color: Colors.textPrimary,
     letterSpacing: -0.3,
   },
   stripLabel: {
     fontSize: 9,
     fontFamily: 'Poppins_500Medium',
-    color: Colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   stripDivider: {
     width: 1,
     height: 24,
-    backgroundColor: 'rgba(0,0,0,0.08)',
   },
   liveDot: {
     width: 5,
@@ -803,7 +800,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.96)',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     shadowColor: '#000',
@@ -816,7 +812,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   startButton: {
-    backgroundColor: Colors.primary,
     width: '100%',
     height: 60,
     borderRadius: 30,
@@ -824,7 +819,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
-    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
     shadowRadius: 12,
@@ -858,12 +852,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  pauseButton: {
-    backgroundColor: Colors.warning,
-  },
-  stopButton: {
-    backgroundColor: Colors.error,
-  },
+  pauseButton: {},
+  stopButton: {},
   controlButtonText: {
     color: '#fff',
     fontSize: 15,

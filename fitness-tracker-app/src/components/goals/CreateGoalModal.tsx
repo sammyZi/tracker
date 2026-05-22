@@ -19,7 +19,8 @@ import { Text, ConfirmModal } from '../common';
 import { Button } from '../common/Button';
 import { useConfirmModal } from '../../hooks/useConfirmModal';
 import { GoalType, GoalPeriod } from '../../types';
-import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 
 interface CreateGoalModalProps {
   visible: boolean;
@@ -50,6 +51,7 @@ export const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
   initialTarget,
   initialPeriod,
 }) => {
+  const { colors } = useTheme();
   const { modalState, showConfirm, hideModal } = useConfirmModal();
   const [selectedType, setSelectedType] = useState<GoalType>(initialType || 'distance');
   const [selectedPeriod, setSelectedPeriod] = useState<GoalPeriod>(initialPeriod || 'weekly');
@@ -103,7 +105,7 @@ export const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
           'Invalid Input',
           'Please enter a valid target value',
           [{ text: 'OK', onPress: hideModal, style: 'default' }],
-          { icon: 'alert-circle', iconColor: Colors.error }
+          { icon: 'alert-circle', iconColor: colors.error }
         );
         return;
       }
@@ -133,7 +135,7 @@ export const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
         'Error',
         'Failed to create goal. Please try again.',
         [{ text: 'OK', onPress: hideModal, style: 'default' }],
-        { icon: 'alert-circle', iconColor: Colors.error }
+        { icon: 'alert-circle', iconColor: colors.error }
       );
     } finally {
       setCreating(false);
@@ -158,13 +160,13 @@ export const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
           activeOpacity={1} 
           onPress={onClose} 
         />
-        <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
-          <View style={styles.modalHeader}>
-            <Text variant="large" weight="bold" color={Colors.textPrimary}>
+        <View style={[styles.modalContent, { backgroundColor: colors.surface }]} onStartShouldSetResponder={() => true}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+            <Text variant="large" weight="bold" color={colors.textPrimary}>
               {title}
             </Text>
             <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color={Colors.textSecondary} />
+              <Ionicons name="close" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -180,7 +182,8 @@ export const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
                     key={goalType.type}
                     style={[
                       styles.optionCard,
-                      selectedType === goalType.type && styles.optionCardSelected,
+                      { borderColor: colors.border, backgroundColor: colors.background },
+                      selectedType === goalType.type && { borderColor: colors.primary, backgroundColor: `${colors.primary}10` },
                     ]}
                     onPress={() => setSelectedType(goalType.type)}
                   >
@@ -188,14 +191,14 @@ export const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
                       name={goalType.icon}
                       size={28}
                       color={
-                        selectedType === goalType.type ? Colors.primary : Colors.textSecondary
+                        selectedType === goalType.type ? colors.primary : colors.textSecondary
                       }
                     />
                     <Text
                       variant="small"
                       weight="medium"
                       color={
-                        selectedType === goalType.type ? Colors.primary : Colors.textSecondary
+                        selectedType === goalType.type ? colors.primary : colors.textSecondary
                       }
                     >
                       {goalType.label}
@@ -216,7 +219,8 @@ export const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
                     key={period.period}
                     style={[
                       styles.periodButton,
-                      selectedPeriod === period.period && styles.periodButtonSelected,
+                      { borderColor: colors.border, backgroundColor: colors.background },
+                      selectedPeriod === period.period && { borderColor: colors.primary, backgroundColor: colors.primary },
                     ]}
                     onPress={() => setSelectedPeriod(period.period)}
                   >
@@ -224,7 +228,7 @@ export const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
                       variant="medium"
                       weight="medium"
                       color={
-                        selectedPeriod === period.period ? Colors.surface : Colors.textSecondary
+                        selectedPeriod === period.period ? '#FFFFFF' : colors.textSecondary
                       }
                     >
                       {period.label}
@@ -239,26 +243,26 @@ export const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
               <Text variant="medium" weight="semiBold" style={styles.sectionTitle}>
                 Target
               </Text>
-              <View style={styles.inputContainer}>
+              <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.surface }]}>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.textPrimary }]}
                   value={targetValue}
                   onChangeText={setTargetValue}
                   placeholder={selectedGoalType.placeholder}
-                  placeholderTextColor={Colors.disabled}
+                  placeholderTextColor={colors.disabled}
                   keyboardType="decimal-pad"
                 />
-                <Text variant="medium" color={Colors.textSecondary} style={styles.inputUnit}>
+                <Text variant="medium" color={colors.textSecondary} style={styles.inputUnit}>
                   {selectedGoalType.unit}
                 </Text>
               </View>
-              <Text variant="extraSmall" color={Colors.textSecondary} style={styles.helpText}>
+              <Text variant="extraSmall" color={colors.textSecondary} style={styles.helpText}>
                 Set a realistic target for your {selectedPeriod} goal
               </Text>
             </View>
           </ScrollView>
 
-          <View style={styles.modalActions}>
+          <View style={[styles.modalActions, { borderTopColor: colors.border }]}>
             <Button
               title="Cancel"
               variant="outline"
@@ -299,7 +303,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    backgroundColor: Colors.surface,
     borderTopLeftRadius: BorderRadius.extraLarge,
     borderTopRightRadius: BorderRadius.extraLarge,
     maxHeight: '85%',
@@ -311,7 +314,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Spacing.xl,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   modalForm: {
     padding: Spacing.xl,
@@ -331,14 +333,8 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     borderRadius: BorderRadius.medium,
     borderWidth: 2,
-    borderColor: Colors.border,
     alignItems: 'center',
     gap: Spacing.sm,
-    backgroundColor: Colors.background,
-  },
-  optionCardSelected: {
-    borderColor: Colors.primary,
-    backgroundColor: `${Colors.primary}10`,
   },
   periodButtons: {
     flexDirection: 'row',
@@ -350,21 +346,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     borderRadius: BorderRadius.medium,
     borderWidth: 2,
-    borderColor: Colors.border,
     alignItems: 'center',
-    backgroundColor: Colors.background,
-  },
-  periodButtonSelected: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: BorderRadius.medium,
-    backgroundColor: Colors.surface,
     paddingRight: Spacing.lg,
   },
   input: {
@@ -373,7 +361,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     fontSize: 16,
     fontFamily: 'Poppins_400Regular',
-    color: Colors.textPrimary,
   },
   inputUnit: {
     marginLeft: Spacing.sm,
@@ -387,7 +374,6 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
     gap: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
   },
   actionButton: {
     flex: 1,

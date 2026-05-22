@@ -23,7 +23,8 @@ import {
   formatDate,
   formatDateTime,
 } from '@/utils';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
+import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
+import { useTheme } from '@/hooks';
 
 const { width } = Dimensions.get('window');
 
@@ -38,6 +39,8 @@ export const ActivitySummaryScreen: React.FC<ActivitySummaryScreenProps> = ({
   onSave,
   onDiscard,
 }) => {
+  const { colors, isDark } = useTheme();
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
   const { modalState, showConfirm, hideModal } = useConfirmModal();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -51,7 +54,7 @@ export const ActivitySummaryScreen: React.FC<ActivitySummaryScreenProps> = ({
         'Error',
         'Failed to save activity',
         [{ text: 'OK', onPress: hideModal, style: 'default' }],
-        { icon: 'alert-circle', iconColor: Colors.error }
+        { icon: 'alert-circle', iconColor: colors.error }
       );
     } finally {
       setIsLoading(false);
@@ -73,16 +76,16 @@ export const ActivitySummaryScreen: React.FC<ActivitySummaryScreenProps> = ({
           style: 'destructive',
         },
       ],
-      { icon: 'trash', iconColor: Colors.error }
+      { icon: 'trash', iconColor: colors.error }
     );
   };
 
   const activityTypeIcon = 'fitness';
-  const activityTypeColor = Colors.primary;
+  const activityTypeColor = colors.primary;
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         {/* Header */}
@@ -109,13 +112,13 @@ export const ActivitySummaryScreen: React.FC<ActivitySummaryScreenProps> = ({
           <View style={styles.mainStatsCard}>
             <View style={styles.mainStatRow}>
               <View style={styles.mainStat}>
-                <Ionicons name="time-outline" size={24} color={Colors.primary} />
+                <Ionicons name="time-outline" size={24} color={colors.primary} />
                 <Text style={styles.mainStatValue}>{formatDuration(activity.duration)}</Text>
                 <Text style={styles.mainStatLabel}>Duration</Text>
               </View>
 
               <View style={styles.mainStat}>
-                <Ionicons name="navigate-outline" size={24} color={Colors.primary} />
+                <Ionicons name="navigate-outline" size={24} color={colors.primary} />
                 <Text style={styles.mainStatValue}>{formatDistance(activity.distance)}</Text>
                 <Text style={styles.mainStatLabel}>Distance</Text>
               </View>
@@ -123,13 +126,13 @@ export const ActivitySummaryScreen: React.FC<ActivitySummaryScreenProps> = ({
 
             <View style={styles.mainStatRow}>
               <View style={styles.mainStat}>
-                <Ionicons name="speedometer-outline" size={24} color={Colors.primary} />
+                <Ionicons name="speedometer-outline" size={24} color={colors.primary} />
                 <Text style={styles.mainStatValue}>{formatPace(activity.averagePace)}</Text>
                 <Text style={styles.mainStatLabel}>Avg Pace</Text>
               </View>
 
               <View style={styles.mainStat}>
-                <Ionicons name="flame-outline" size={24} color={Colors.primary} />
+                <Ionicons name="flame-outline" size={24} color={colors.primary} />
                 <Text style={styles.mainStatValue}>{formatCalories(activity.calories)}</Text>
                 <Text style={styles.mainStatLabel}>Calories</Text>
               </View>
@@ -139,14 +142,14 @@ export const ActivitySummaryScreen: React.FC<ActivitySummaryScreenProps> = ({
           {/* Additional Stats */}
           <View style={styles.additionalStats}>
             <View style={styles.statItem}>
-              <Ionicons name="footsteps-outline" size={20} color={Colors.textSecondary} />
+              <Ionicons name="footsteps-outline" size={20} color={colors.textSecondary} />
               <Text style={styles.statItemLabel}>Steps</Text>
               <Text style={styles.statItemValue}>{activity.steps.toLocaleString()}</Text>
             </View>
 
             {activity.averagePace > 0 && (
               <View style={styles.statItem}>
-                <Ionicons name="speedometer-outline" size={20} color={Colors.textSecondary} />
+                <Ionicons name="speedometer-outline" size={20} color={colors.textSecondary} />
                 <Text style={styles.statItemLabel}>Avg Pace</Text>
                 <Text style={styles.statItemValue}>{formatPace(activity.averagePace)}</Text>
               </View>
@@ -154,7 +157,7 @@ export const ActivitySummaryScreen: React.FC<ActivitySummaryScreenProps> = ({
 
             {activity.elevationGain && activity.elevationGain > 0 && (
               <View style={styles.statItem}>
-                <Ionicons name="trending-up-outline" size={20} color={Colors.textSecondary} />
+                <Ionicons name="trending-up-outline" size={20} color={colors.textSecondary} />
                 <Text style={styles.statItemLabel}>Elevation Gain</Text>
                 <Text style={styles.statItemValue}>{Math.round(activity.elevationGain)} m</Text>
               </View>
@@ -170,7 +173,7 @@ export const ActivitySummaryScreen: React.FC<ActivitySummaryScreenProps> = ({
               </View>
               <View style={styles.mapStats}>
                 <View style={styles.mapStat}>
-                  <Ionicons name="location-outline" size={16} color={Colors.textSecondary} />
+                  <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
                   <Text style={styles.mapStatText}>{activity.route.length} points</Text>
                 </View>
               </View>
@@ -185,7 +188,7 @@ export const ActivitySummaryScreen: React.FC<ActivitySummaryScreenProps> = ({
             onPress={handleDiscard}
             disabled={isLoading}
           >
-            <Ionicons name="trash-outline" size={20} color={Colors.error} />
+            <Ionicons name="trash-outline" size={20} color={colors.error} />
             <Text style={[styles.buttonText, styles.discardButtonText]}>Discard</Text>
           </TouchableOpacity>
 
@@ -217,20 +220,20 @@ export const ActivitySummaryScreen: React.FC<ActivitySummaryScreenProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   safeArea: {
     flex: 1,
   },
   header: {
     height: 60,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     paddingHorizontal: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: colors.border,
     justifyContent: 'center',
   },
   headerContent: {
@@ -251,13 +254,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: Typography.fontSize.mediumLarge,
     fontFamily: Typography.fontFamily.bold,
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: Typography.fontSize.small,
     fontFamily: Typography.fontFamily.regular,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   scrollView: {
     flex: 1,
@@ -266,7 +269,7 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
   },
   mainStatsCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: BorderRadius.large,
     padding: Spacing.xl,
     marginBottom: Spacing.lg,
@@ -283,17 +286,17 @@ const styles = StyleSheet.create({
   mainStatValue: {
     fontSize: Typography.fontSize.large,
     fontFamily: Typography.fontFamily.bold,
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
     marginTop: Spacing.sm,
     marginBottom: 4,
   },
   mainStatLabel: {
     fontSize: Typography.fontSize.small,
     fontFamily: Typography.fontFamily.regular,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   additionalStats: {
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: BorderRadius.large,
     padding: Spacing.lg,
     marginBottom: Spacing.lg,
@@ -304,22 +307,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: colors.border,
   },
   statItemLabel: {
     flex: 1,
     fontSize: Typography.fontSize.regular,
     fontFamily: Typography.fontFamily.medium,
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
     marginLeft: Spacing.sm,
   },
   statItemValue: {
     fontSize: Typography.fontSize.regular,
     fontFamily: Typography.fontFamily.semiBold,
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
   },
   mapCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: BorderRadius.large,
     padding: Spacing.lg,
     marginBottom: Spacing.lg,
@@ -328,7 +331,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: Typography.fontSize.medium,
     fontFamily: Typography.fontFamily.semiBold,
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
     marginBottom: Spacing.md,
   },
   mapContainer: {
@@ -349,16 +352,16 @@ const styles = StyleSheet.create({
   mapStatText: {
     fontSize: Typography.fontSize.small,
     fontFamily: Typography.fontFamily.regular,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginLeft: 4,
   },
   actionButtons: {
     flexDirection: 'row',
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.lg,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: colors.border,
     gap: Spacing.md,
   },
   button: {
@@ -371,12 +374,12 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   discardButton: {
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderWidth: 2,
-    borderColor: Colors.error,
+    borderColor: colors.error,
   },
   saveButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     ...Shadows.medium,
   },
   buttonText: {
@@ -384,7 +387,7 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.semiBold,
   },
   discardButtonText: {
-    color: Colors.error,
+    color: colors.error,
   },
   saveButtonText: {
     color: '#fff',

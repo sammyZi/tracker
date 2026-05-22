@@ -5,7 +5,7 @@
  * Uses an in-screen modal for success/error feedback.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -14,11 +14,12 @@ import {
   Platform,
   TouchableOpacity,
   Modal,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Input, Button, Text } from '../../components/common';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Spacing, BorderRadius } from '../../constants/theme';
 import { useAuth } from '../../context';
 import { useTheme } from '../../hooks';
 
@@ -36,7 +37,8 @@ function validateEmail(email: string): string | undefined {
 
 export const ForgotPasswordScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { resetPassword } = useAuth();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState<string | undefined>();
@@ -79,13 +81,14 @@ export const ForgotPasswordScreen: React.FC<{ navigation: any }> = ({ navigation
   }, [modalSuccess, navigation]);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* Back header */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
@@ -163,11 +166,11 @@ export const ForgotPasswordScreen: React.FC<{ navigation: any }> = ({ navigation
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
-            <View style={[styles.modalIcon, { backgroundColor: modalSuccess ? Colors.success + '15' : Colors.error + '15' }]}>
+            <View style={[styles.modalIcon, { backgroundColor: modalSuccess ? colors.success + '15' : colors.error + '15' }]}>
               <Ionicons
                 name={modalSuccess ? 'checkmark-circle' : 'alert-circle'}
                 size={40}
-                color={modalSuccess ? Colors.success : Colors.error}
+                color={modalSuccess ? colors.success : colors.error}
               />
             </View>
             <Text variant="large" weight="bold" color={colors.textPrimary} style={styles.modalTitle}>
@@ -193,14 +196,20 @@ export const ForgotPasswordScreen: React.FC<{ navigation: any }> = ({ navigation
 
 // ── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  flex: { flex: 1 },
+const createStyles = (colors: any) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  flex: {
+    flex: 1,
+  },
   header: {
     height: 56,
     justifyContent: 'center',
     paddingHorizontal: Spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
   scrollContent: {
     flexGrow: 1,
@@ -220,14 +229,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: Spacing.lg,
   },
-  title: { marginBottom: Spacing.sm },
+  title: {
+    marginBottom: Spacing.sm,
+  },
   subtitle: {
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: Spacing.lg,
   },
-  form: { marginBottom: Spacing.xl },
-  submitButton: { marginTop: Spacing.md },
+  form: {
+    marginBottom: Spacing.xl,
+  },
+  submitButton: {
+    marginTop: Spacing.md,
+  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -255,7 +270,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: Spacing.lg,
   },
-  modalTitle: { marginBottom: Spacing.sm, textAlign: 'center' },
-  modalMessage: { textAlign: 'center', lineHeight: 20, marginBottom: Spacing.lg },
-  modalButton: { marginTop: Spacing.sm },
+  modalTitle: {
+    marginBottom: Spacing.sm,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: Spacing.lg,
+  },
+  modalButton: {
+    marginTop: Spacing.sm,
+  },
 });

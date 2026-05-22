@@ -9,7 +9,8 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, BorderRadius, Shadows, Spacing } from '../../constants/theme';
+import { BorderRadius, Shadows, Spacing } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
@@ -28,6 +29,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   size = 'large',
   pulsing = false,
 }) => {
+  const { colors } = useTheme();
   const scale = useSharedValue(1);
   const pulseScale = useSharedValue(1);
 
@@ -61,11 +63,11 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   const getBackgroundColor = () => {
     switch (variant) {
       case 'success':
-        return Colors.success;
+        return colors.success;
       case 'error':
-        return Colors.error;
+        return colors.error;
       default:
-        return Colors.primary;
+        return colors.primary;
     }
   };
 
@@ -104,7 +106,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
         onPressOut={handlePressOut}
         activeOpacity={0.9}
       >
-        <Ionicons name={icon} size={iconSize} color={Colors.surface} />
+        <Ionicons name={icon} size={iconSize} color="#FFFFFF" />
       </AnimatedTouchable>
     </View>
   );

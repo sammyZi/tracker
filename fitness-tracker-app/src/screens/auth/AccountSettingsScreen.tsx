@@ -19,6 +19,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Modal,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,7 +28,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Text, Button } from '../../components/common';
 import { ConfirmModal } from '../../components/common';
 import { SyncStatusIndicator } from '../../components/sync';
-import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { useAuth } from '../../context';
 import { useTheme } from '../../hooks';
 import { useConfirmModal } from '../../hooks/useConfirmModal';
@@ -102,7 +103,7 @@ const SettingRow: React.FC<SettingRowProps> = ({
 
 export const AccountSettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { user, isAuthenticated, signOut, signInWithGoogle } = useAuth();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { modalState, showConfirm, hideModal } = useConfirmModal();
 
   // State
@@ -195,7 +196,7 @@ export const AccountSettingsScreen: React.FC<{ navigation: any }> = ({ navigatio
         'Account Required',
         'Please sign in to enable cloud sync.',
         [{ text: 'OK', onPress: hideModal, style: 'default' }],
-        { icon: 'person-circle-outline', iconColor: Colors.primary }
+        { icon: 'person-circle-outline', iconColor: colors.primary }
       );
       return;
     }
@@ -237,7 +238,7 @@ export const AccountSettingsScreen: React.FC<{ navigation: any }> = ({ navigatio
               },
             },
           ],
-          { icon: 'cloud-offline-outline', iconColor: Colors.warning }
+          { icon: 'cloud-offline-outline', iconColor: colors.warning }
         );
         return;
       }
@@ -246,12 +247,12 @@ export const AccountSettingsScreen: React.FC<{ navigation: any }> = ({ navigatio
         'Error',
         'Failed to update sync settings. Please try again.',
         [{ text: 'OK', onPress: hideModal, style: 'default' }],
-        { icon: 'alert-circle', iconColor: Colors.error }
+        { icon: 'alert-circle', iconColor: colors.error }
       );
     } finally {
       setIsTogglingSync(false);
     }
-  }, [isAuthenticated, user, runMigration, showConfirm, hideModal]);
+  }, [isAuthenticated, user, runMigration, showConfirm, hideModal, colors]);
 
   // ── Logout ─────────────────────────────────────────────────────────────
 
@@ -283,7 +284,7 @@ export const AccountSettingsScreen: React.FC<{ navigation: any }> = ({ navigatio
                   'Error',
                   'Failed to log out. Please try again.',
                   [{ text: 'OK', onPress: hideModal, style: 'default' }],
-                  { icon: 'alert-circle', iconColor: Colors.error }
+                  { icon: 'alert-circle', iconColor: colors.error }
                 );
               }, 300);
             } finally {
@@ -292,9 +293,9 @@ export const AccountSettingsScreen: React.FC<{ navigation: any }> = ({ navigatio
           },
         },
       ],
-      { icon: 'log-out-outline', iconColor: Colors.error }
+      { icon: 'log-out-outline', iconColor: colors.error }
     );
-  }, [signOut, showConfirm, hideModal]);
+  }, [signOut, showConfirm, hideModal, colors]);
 
   const switchTrackColor = { false: colors.border, true: colors.primary };
 
@@ -303,6 +304,7 @@ export const AccountSettingsScreen: React.FC<{ navigation: any }> = ({ navigatio
   if (!isAuthenticated || !user) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         {/* Header — matching Settings */}
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <TouchableOpacity
@@ -351,6 +353,7 @@ export const AccountSettingsScreen: React.FC<{ navigation: any }> = ({ navigatio
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       {/* Header — matching Settings page style */}
       <View style={[styles.header, { backgroundColor: colors.background }]}>
         <TouchableOpacity
@@ -408,15 +411,15 @@ export const AccountSettingsScreen: React.FC<{ navigation: any }> = ({ navigatio
 
           <SettingRow
             icon={cloudSyncEnabled ? 'cloud-done-outline' : 'phone-portrait-outline'}
-            iconBg={cloudSyncEnabled ? Colors.success : colors.textSecondary}
+            iconBg={cloudSyncEnabled ? colors.success : colors.textSecondary}
             label="Storage Mode"
             description={cloudSyncEnabled ? 'Cloud Sync — data backed up online' : 'Local Only — data on this device'}
             colors={colors}
             right={
               <View style={[styles.badge, {
-                backgroundColor: cloudSyncEnabled ? Colors.success + '18' : colors.border + '40',
+                backgroundColor: cloudSyncEnabled ? colors.success + '18' : colors.border + '40',
               }]}>
-                <Text variant="extraSmall" weight="semiBold" color={cloudSyncEnabled ? Colors.success : colors.textSecondary}>
+                <Text variant="extraSmall" weight="semiBold" color={cloudSyncEnabled ? colors.success : colors.textSecondary}>
                   {cloudSyncEnabled ? 'ACTIVE' : 'OFF'}
                 </Text>
               </View>
@@ -440,13 +443,13 @@ export const AccountSettingsScreen: React.FC<{ navigation: any }> = ({ navigatio
         <Section title="Actions" colors={colors}>
           <SettingRow
             icon="log-out-outline"
-            iconBg={Colors.error}
+            iconBg={colors.error}
             label="Log Out"
             description="Sign out of your account"
             colors={colors}
             right={
               isLoggingOut ? (
-                <ActivityIndicator size="small" color={Colors.error} />
+                <ActivityIndicator size="small" color={colors.error} />
               ) : (
                 <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
               )
@@ -485,7 +488,7 @@ export const AccountSettingsScreen: React.FC<{ navigation: any }> = ({ navigatio
               <Ionicons
                 name={migrationDone ? (migrationError ? 'alert-circle' : 'checkmark-circle') : 'cloud-upload-outline'}
                 size={40}
-                color={migrationDone && migrationError ? Colors.warning : colors.primary}
+                color={migrationDone && migrationError ? colors.warning : colors.primary}
               />
             </View>
 
@@ -528,7 +531,7 @@ export const AccountSettingsScreen: React.FC<{ navigation: any }> = ({ navigatio
             {migrationDone && (
               <>
                 {migrationError ? (
-                  <Text variant="regular" color={Colors.warning} style={styles.migrationPhase}>
+                  <Text variant="regular" color={colors.warning} style={styles.migrationPhase}>
                     {migrationError}
                   </Text>
                 ) : (

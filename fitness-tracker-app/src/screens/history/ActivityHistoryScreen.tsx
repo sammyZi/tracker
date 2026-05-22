@@ -22,9 +22,9 @@ import { Text } from '../../components/common';
 import { ActivityCard } from '../../components/activity';
 import { EmptyState } from '../../components/common';
 import { MonthlyCalendarCard } from '../../components/stats/MonthlyCalendarCard';
-import { useActivityHistory } from '../../hooks';
+import { useActivityHistory, useTheme } from '../../hooks';
 import { Activity, ActivityType, UnitSystem } from '../../types';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/theme';
+import { LightColors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/theme';
 import StorageService from '../../services/storage/StorageService';
 
 interface ActivityHistoryScreenProps {
@@ -45,6 +45,9 @@ const ActivityHistoryScreenComponent: React.FC<ActivityHistoryScreenProps> = ({ 
     refresh,
     loadMore,
   } = useActivityHistory();
+
+  const { colors } = useTheme();
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
 
   // Filter modal state
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -120,32 +123,32 @@ const ActivityHistoryScreenComponent: React.FC<ActivityHistoryScreenProps> = ({ 
 
   const renderListHeader = React.useCallback(() => (
     <View style={styles.header}>
-      <Text variant="large" weight="bold" color={Colors.textPrimary}>
+      <Text variant="large" weight="bold" color={colors.textPrimary}>
         Activity History
       </Text>
       <TouchableOpacity
         style={styles.filterButton}
         onPress={() => setFilterModalVisible(true)}
       >
-        <Ionicons name="filter" size={20} color={Colors.primary} />
+        <Ionicons name="filter" size={20} color={colors.primary} />
         {(activityTypeFilter !== 'all' || dateRangeFilter !== 'all') && (
           <View style={styles.filterBadge} />
         )}
       </TouchableOpacity>
     </View>
-  ), [activityTypeFilter, dateRangeFilter]);
+  ), [activityTypeFilter, dateRangeFilter, colors]);
 
   const renderCalendarHeader = React.useCallback(() => (
     <View>
       <View style={styles.header}>
-        <Text variant="large" weight="bold" color={Colors.textPrimary}>
+        <Text variant="large" weight="bold" color={colors.textPrimary}>
           Activity History
         </Text>
         <TouchableOpacity
           style={styles.filterButton}
           onPress={() => setFilterModalVisible(true)}
         >
-          <Ionicons name="filter" size={20} color={Colors.primary} />
+          <Ionicons name="filter" size={20} color={colors.primary} />
           {(activityTypeFilter !== 'all' || dateRangeFilter !== 'all') && (
             <View style={styles.filterBadge} />
           )}
@@ -157,7 +160,7 @@ const ActivityHistoryScreenComponent: React.FC<ActivityHistoryScreenProps> = ({ 
           <MonthlyCalendarCard activities={activities} units={units} />
           <View style={styles.sectionSeparator}>
             <View style={styles.separatorLine} />
-            <Text variant="small" weight="semiBold" color={Colors.textSecondary}>
+            <Text variant="small" weight="semiBold" color={colors.textSecondary}>
               All Activities
             </Text>
             <View style={styles.separatorLine} />
@@ -165,19 +168,19 @@ const ActivityHistoryScreenComponent: React.FC<ActivityHistoryScreenProps> = ({ 
         </>
       )}
     </View>
-  ), [activityTypeFilter, dateRangeFilter, activities, units]);
+  ), [activityTypeFilter, dateRangeFilter, activities, units, colors]);
 
   const renderListFooter = React.useCallback(() => {
     if (!hasMore || activities.length === 0) return null;
 
     return (
       <View style={styles.footer}>
-        <Text variant="small" color={Colors.textSecondary}>
+        <Text variant="small" color={colors.textSecondary}>
           {loading ? 'Loading more...' : 'Pull to load more'}
         </Text>
       </View>
     );
-  }, [hasMore, activities.length, loading]);
+  }, [hasMore, activities.length, loading, colors]);
 
   const renderEmptyState = () => (
     <EmptyState
@@ -197,11 +200,11 @@ const ActivityHistoryScreenComponent: React.FC<ActivityHistoryScreenProps> = ({ 
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text variant="medium" weight="semiBold">
+            <Text variant="medium" weight="semiBold" color={colors.textPrimary}>
               Filter Activities
             </Text>
             <TouchableOpacity onPress={() => setFilterModalVisible(false)}>
-              <Ionicons name="close" size={24} color={Colors.textPrimary} />
+              <Ionicons name="close" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -213,17 +216,17 @@ const ActivityHistoryScreenComponent: React.FC<ActivityHistoryScreenProps> = ({ 
             <View style={styles.filterOptions}>
               {(['all', 'week', 'month', 'year'] as const).map((range) => (
                 <TouchableOpacity
-                  key={range}
-                  style={[
-                    styles.filterOption,
-                    dateRangeFilter === range && styles.filterOptionActive,
-                  ]}
-                  onPress={() => setDateRangeFilter(range)}
+                   key={range}
+                   style={[
+                     styles.filterOption,
+                     dateRangeFilter === range && styles.filterOptionActive,
+                   ]}
+                   onPress={() => setDateRangeFilter(range)}
                 >
                   <Text
                     variant="regular"
                     weight={dateRangeFilter === range ? 'semiBold' : 'regular'}
-                    color={dateRangeFilter === range ? Colors.surface : Colors.textPrimary}
+                    color={dateRangeFilter === range ? colors.surface : colors.textPrimary}
                   >
                     {range === 'all' ? 'All Time' : `Last ${range.charAt(0).toUpperCase() + range.slice(1)}`}
                   </Text>
@@ -241,7 +244,7 @@ const ActivityHistoryScreenComponent: React.FC<ActivityHistoryScreenProps> = ({ 
                 setDateRangeFilter('all');
               }}
             >
-              <Text variant="regular" weight="medium" color={Colors.textSecondary}>
+              <Text variant="regular" weight="medium" color={colors.textSecondary}>
                 Clear Filters
               </Text>
             </TouchableOpacity>
@@ -249,7 +252,7 @@ const ActivityHistoryScreenComponent: React.FC<ActivityHistoryScreenProps> = ({ 
               style={styles.applyButton}
               onPress={() => setFilterModalVisible(false)}
             >
-              <Text variant="regular" weight="semiBold" color={Colors.surface}>
+              <Text variant="regular" weight="semiBold" color={colors.surface}>
                 Apply
               </Text>
             </TouchableOpacity>
@@ -264,7 +267,7 @@ const ActivityHistoryScreenComponent: React.FC<ActivityHistoryScreenProps> = ({ 
       <View style={styles.statusBarSpacer} />
       {loading && activities.length === 0 ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <FlatList
@@ -282,8 +285,8 @@ const ActivityHistoryScreenComponent: React.FC<ActivityHistoryScreenProps> = ({ 
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor={Colors.primary}
-              colors={[Colors.primary]}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
             />
           }
           onEndReached={handleLoadMore}
@@ -305,14 +308,14 @@ const ActivityHistoryScreenComponent: React.FC<ActivityHistoryScreenProps> = ({ 
 // Memoize the component to prevent unnecessary re-renders
 export const ActivityHistoryScreen = React.memo(ActivityHistoryScreenComponent);
 
-const styles = StyleSheet.create({
+const createStyles = (colors: typeof LightColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.background,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 44,
   },
   statusBarSpacer: {
-    height: 0, // Padding is on container now
+    height: 0,
   },
   loadingContainer: {
     flex: 1,
@@ -333,15 +336,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: colors.border,
   },
   filterButton: {
     width: 44,
     height: 44,
     borderRadius: BorderRadius.medium,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     ...Shadows.small,
@@ -353,7 +356,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: Colors.error,
+    backgroundColor: colors.error,
   },
   footer: {
     paddingVertical: Spacing.xl,
@@ -367,7 +370,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderTopLeftRadius: BorderRadius.extraLarge,
     borderTopRightRadius: BorderRadius.extraLarge,
     paddingHorizontal: Spacing.xl,
@@ -386,7 +389,7 @@ const styles = StyleSheet.create({
   },
   filterLabel: {
     marginBottom: Spacing.md,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   filterOptions: {
     flexDirection: 'row',
@@ -397,13 +400,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.medium,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
   },
   filterOptionActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   modalActions: {
     flexDirection: 'row',
@@ -414,7 +417,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: Spacing.lg,
     borderRadius: BorderRadius.medium,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -422,7 +425,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: Spacing.lg,
     borderRadius: BorderRadius.medium,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     ...Shadows.medium,
@@ -441,6 +444,6 @@ const styles = StyleSheet.create({
   separatorLine: {
     flex: 1,
     height: 1,
-    backgroundColor: Colors.border,
+    backgroundColor: colors.border,
   },
 });

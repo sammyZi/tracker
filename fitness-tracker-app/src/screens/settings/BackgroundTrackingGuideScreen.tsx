@@ -17,7 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../../components/common';
-import { Colors, Spacing, BorderRadius, Typography } from '../../constants/theme';
+import { Spacing, BorderRadius, Typography } from '../../constants/theme';
 import { useTheme } from '../../hooks';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -521,7 +521,7 @@ export const BackgroundTrackingGuideScreen: React.FC<{ navigation: any }> = ({ n
 // Styles
 // ─────────────────────────────────────────────────────────────────────────────
 
-const createStyles = (colors: typeof Colors) =>
+const createStyles = (colors: any) =>
   StyleSheet.create({
     container: { flex: 1 },
 

@@ -8,7 +8,8 @@ import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from './Text';
 import { Button } from './Button';
-import { Colors, Spacing } from '../../constants/theme';
+import { Spacing } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 
 interface EmptyStateProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -25,16 +26,18 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   actionText,
   onAction,
 }) => {
+  const { colors } = useTheme();
+
   return (
     <View style={styles.container}>
       <View style={styles.iconContainer}>
-        <Ionicons name={icon} size={80} color={Colors.disabled} />
+        <Ionicons name={icon} size={80} color={colors.disabled} />
       </View>
       
       <Text
         variant="mediumLarge"
         weight="semiBold"
-        color={Colors.textPrimary}
+        color={colors.textPrimary}
         style={styles.title}
       >
         {title}
@@ -42,7 +45,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       
       <Text
         variant="regular"
-        color={Colors.textSecondary}
+        color={colors.textSecondary}
         style={styles.message}
       >
         {message}

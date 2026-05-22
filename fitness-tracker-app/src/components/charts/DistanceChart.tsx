@@ -7,7 +7,8 @@ import React, { useMemo } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { Activity, UnitSystem } from '../../types';
-import { Colors, Typography, Spacing } from '../../constants/theme';
+import { Typography, Spacing } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 import { metersToKilometers, metersToMiles } from '../../utils/calculations';
 import { Text } from '../common/Text';
 
@@ -24,6 +25,8 @@ export const DistanceChart: React.FC<DistanceChartProps> = ({
   units,
   period,
 }) => {
+  const { colors } = useTheme();
+
   const chartData = useMemo(() => {
     if (activities.length === 0) {
       return {
@@ -80,7 +83,7 @@ export const DistanceChart: React.FC<DistanceChartProps> = ({
   if (activities.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Text variant="medium" color={Colors.textSecondary} align="center">
+        <Text variant="medium" color={colors.textSecondary} align="center">
           No activity data available for this period
         </Text>
       </View>
@@ -94,9 +97,9 @@ export const DistanceChart: React.FC<DistanceChartProps> = ({
         width={screenWidth - 32}
         height={220}
         chartConfig={{
-          backgroundColor: Colors.surface,
-          backgroundGradientFrom: Colors.surface,
-          backgroundGradientTo: Colors.surface,
+          backgroundColor: colors.surface,
+          backgroundGradientFrom: colors.surface,
+          backgroundGradientTo: colors.surface,
           decimalPlaces: 1,
           color: (opacity = 1) => `rgba(108, 99, 255, ${opacity})`,
           labelColor: (opacity = 1) => `rgba(99, 110, 114, ${opacity})`,
@@ -106,11 +109,11 @@ export const DistanceChart: React.FC<DistanceChartProps> = ({
           propsForDots: {
             r: '4',
             strokeWidth: '2',
-            stroke: Colors.primary,
+            stroke: colors.primary,
           },
           propsForBackgroundLines: {
             strokeDasharray: '',
-            stroke: Colors.border,
+            stroke: colors.border,
             strokeWidth: 1,
           },
         }}

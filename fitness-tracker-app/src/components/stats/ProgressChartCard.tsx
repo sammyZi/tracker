@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { Text } from '../common/Text';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Spacing, BorderRadius } from '../../constants/theme';
 import { useTheme } from '../../hooks';
 import { Activity, UnitSystem } from '../../types';
 import { formatDistanceValue } from '../../utils/formatting';

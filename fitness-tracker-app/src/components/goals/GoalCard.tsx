@@ -10,7 +10,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../common/Text';
 import { Card } from '../common/Card';
 import { Goal } from '../../types';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Spacing, BorderRadius } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 import GoalsService from '../../services/goals/GoalsService';
 
 interface GoalCardProps {
@@ -25,6 +26,7 @@ const CIRCLE_RADIUS = (CIRCLE_SIZE - CIRCLE_STROKE) / 2;
 const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
 
 export const GoalCard: React.FC<GoalCardProps> = ({ goal, units, onPress }) => {
+  const { colors } = useTheme();
   const progress = GoalsService.getProgressPercentage(goal);
   const isExpired = goal.endDate < Date.now();
   const isAchieved = goal.achieved;
@@ -43,10 +45,10 @@ export const GoalCard: React.FC<GoalCardProps> = ({ goal, units, onPress }) => {
   };
 
   const getGoalColor = (): string => {
-    if (isAchieved) return Colors.success;
-    if (isExpired) return Colors.disabled;
-    if (progress >= 75) return Colors.warning;
-    return Colors.primary;
+    if (isAchieved) return colors.success;
+    if (isExpired) return colors.disabled;
+    if (progress >= 75) return colors.warning;
+    return colors.primary;
   };
 
   const getGoalLabel = (): string => {
@@ -112,7 +114,7 @@ export const GoalCard: React.FC<GoalCardProps> = ({ goal, units, onPress }) => {
             {/* Icon in center */}
             <View style={styles.circleIconOverlay}>
               {isAchieved ? (
-                <Ionicons name="checkmark" size={22} color={Colors.success} />
+                <Ionicons name="checkmark" size={22} color={colors.success} />
               ) : (
                 <Ionicons name={getGoalIcon()} size={20} color={color} />
               )}
@@ -122,7 +124,7 @@ export const GoalCard: React.FC<GoalCardProps> = ({ goal, units, onPress }) => {
           {/* Goal Info */}
           <View style={styles.info}>
             <View style={styles.labelRow}>
-              <Text variant="medium" weight="semiBold" color={Colors.textPrimary}>
+              <Text variant="medium" weight="semiBold" color={colors.textPrimary}>
                 {getGoalLabel()}
               </Text>
               <View style={[styles.periodBadge, { backgroundColor: `${color}15` }]}>
@@ -133,10 +135,10 @@ export const GoalCard: React.FC<GoalCardProps> = ({ goal, units, onPress }) => {
             </View>
 
             <View style={styles.progressRow}>
-              <Text variant="large" weight="bold" color={Colors.textPrimary}>
+              <Text variant="large" weight="bold" color={colors.textPrimary}>
                 {GoalsService.formatGoalProgress(goal, units)}
               </Text>
-              <Text variant="small" color={Colors.textSecondary}>
+              <Text variant="small" color={colors.textSecondary}>
                 {' '}/ {GoalsService.formatGoalTarget(goal, units)}
               </Text>
               <Text variant="small" weight="bold" color={color} style={{ marginLeft: Spacing.sm }}>
@@ -151,7 +153,7 @@ export const GoalCard: React.FC<GoalCardProps> = ({ goal, units, onPress }) => {
                   <View style={[styles.miniBarFill, { width: `${Math.min(progress, 100)}%`, backgroundColor: color }]} />
                 </View>
               </View>
-              <Text variant="extraSmall" color={Colors.textSecondary}>
+              <Text variant="extraSmall" color={colors.textSecondary}>
                 {getDaysRemaining()}
               </Text>
             </View>

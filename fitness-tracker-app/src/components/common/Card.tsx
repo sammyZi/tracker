@@ -11,7 +11,8 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
-import { Colors, BorderRadius, Shadows, Layout } from '../../constants/theme';
+import { BorderRadius, Shadows, Layout } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
@@ -31,6 +32,7 @@ export const Card: React.FC<CardProps> = ({
   children,
   ...props
 }) => {
+  const { colors } = useTheme();
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -50,14 +52,17 @@ export const Card: React.FC<CardProps> = ({
   };
 
   const getCardStyle = () => {
-    const baseStyle: any[] = [styles.card, { padding }];
+    const baseStyle: any[] = [
+      styles.card,
+      { padding, backgroundColor: colors.surface },
+    ];
 
     switch (variant) {
       case 'elevated':
         baseStyle.push(styles.elevated);
         break;
       case 'outlined':
-        baseStyle.push(styles.outlined);
+        baseStyle.push({ borderWidth: 1, borderColor: colors.border });
         break;
       default:
         baseStyle.push(styles.default);
@@ -91,16 +96,11 @@ export const Card: React.FC<CardProps> = ({
 const styles = StyleSheet.create({
   card: {
     borderRadius: BorderRadius.large,
-    backgroundColor: Colors.surface,
   },
   default: {
     ...Shadows.small,
   },
   elevated: {
     ...Shadows.large,
-  },
-  outlined: {
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
 });

@@ -2,7 +2,8 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../common/Text';
-import { Colors, BorderRadius, Spacing } from '../../constants/theme';
+import { BorderRadius, Spacing } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 import { AccuracyQuality } from '../../types';
 
 interface GPSSignalIndicatorProps {
@@ -14,18 +15,20 @@ export const GPSSignalIndicator: React.FC<GPSSignalIndicatorProps> = ({
   quality,
   accuracy,
 }) => {
+  const { colors } = useTheme();
+
   const getQualityColor = () => {
     switch (quality) {
       case 'excellent':
-        return Colors.success;
+        return colors.success;
       case 'good':
-        return Colors.info;
+        return colors.info;
       case 'fair':
-        return Colors.warning;
+        return colors.warning;
       case 'poor':
-        return Colors.error;
+        return colors.error;
       default:
-        return Colors.disabled;
+        return colors.disabled;
     }
   };
 
@@ -72,18 +75,18 @@ export const GPSSignalIndicator: React.FC<GPSSignalIndicatorProps> = ({
               {
                 height: bar * 4 + 4,
                 backgroundColor:
-                  bar <= signalBars ? getQualityColor() : Colors.disabled,
+                  bar <= signalBars ? getQualityColor() : colors.disabled,
               },
             ]}
           />
         ))}
       </View>
       <View style={styles.textContainer}>
-        <Text variant="extraSmall" weight="medium" color={Colors.surface}>
+        <Text variant="extraSmall" weight="medium" color="#FFFFFF">
           GPS: {getQualityText()}
         </Text>
         {accuracy !== undefined && (
-          <Text variant="extraSmall" weight="regular" color={Colors.surface} style={styles.accuracy}>
+          <Text variant="extraSmall" weight="regular" color="#FFFFFF" style={styles.accuracy}>
             ±{accuracy.toFixed(0)}m
           </Text>
         )}

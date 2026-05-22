@@ -16,7 +16,7 @@ import {
     formatPace,
     formatDate,
 } from '../../utils/formatting';
-import { Colors } from '../../constants/theme';
+import { useTheme } from '../../hooks';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface ActivityShareCardProps {
@@ -31,12 +31,14 @@ export const ActivityShareCard: React.FC<ActivityShareCardProps> = ({
     activity,
     units,
 }) => {
+    const { colors } = useTheme();
+
     const getActivityIcon = () => {
         return 'fitness';
     };
 
     const getActivityColor = () => {
-        return Colors.primary;
+        return colors.primary;
     };
 
     const getGradientColors = (): [string, string] => {
@@ -44,7 +46,7 @@ export const ActivityShareCard: React.FC<ActivityShareCardProps> = ({
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: colors.surface }]}>
             {/* Header with Gradient */}
             <LinearGradient
                 colors={getGradientColors()}
@@ -70,25 +72,25 @@ export const ActivityShareCard: React.FC<ActivityShareCardProps> = ({
             </LinearGradient>
 
             {/* Main Stats - Large Display */}
-            <View style={styles.mainStats}>
+            <View style={[styles.mainStats, { backgroundColor: colors.surface }]}>
                 <View style={styles.primaryStat}>
                     <Ionicons name="navigate" size={56} color={getActivityColor()} />
-                    <Text variant="extraLarge" weight="bold" color={Colors.textPrimary} style={styles.primaryValue}>
+                    <Text variant="extraLarge" weight="bold" color={colors.textPrimary} style={styles.primaryValue}>
                         {formatDistance(activity.distance, units, 2).split(' ')[0]}
                     </Text>
-                    <Text variant="medium" color={Colors.textSecondary} style={{ fontSize: 32 }}>
+                    <Text variant="medium" color={colors.textSecondary} style={{ fontSize: 32 }}>
                         {formatDistance(activity.distance, units, 2).split(' ')[1]}
                     </Text>
                 </View>
 
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.primaryStat}>
                     <Ionicons name="time" size={56} color={getActivityColor()} />
-                    <Text variant="extraLarge" weight="bold" color={Colors.textPrimary} style={styles.primaryValue}>
+                    <Text variant="extraLarge" weight="bold" color={colors.textPrimary} style={styles.primaryValue}>
                         {formatDuration(activity.duration)}
                     </Text>
-                    <Text variant="medium" color={Colors.textSecondary} style={{ fontSize: 32 }}>
+                    <Text variant="medium" color={colors.textSecondary} style={{ fontSize: 32 }}>
                         Duration
                     </Text>
                 </View>
@@ -96,38 +98,38 @@ export const ActivityShareCard: React.FC<ActivityShareCardProps> = ({
 
             {/* Secondary Stats Grid */}
             <View style={styles.secondaryStats}>
-                <View style={styles.statBox}>
-                    <View style={[styles.statIcon, { backgroundColor: Colors.info + '20' }]}>
-                        <Ionicons name="speedometer" size={40} color={Colors.info} />
+                <View style={[styles.statBox, { backgroundColor: colors.background }]}>
+                    <View style={[styles.statIcon, { backgroundColor: colors.info + '20' }]}>
+                        <Ionicons name="speedometer" size={40} color={colors.info} />
                     </View>
-                    <Text variant="large" weight="bold" color={Colors.textPrimary} style={{ fontSize: 36 }}>
+                    <Text variant="large" weight="bold" color={colors.textPrimary} style={{ fontSize: 36 }}>
                         {formatPace(activity.averagePace, units).split(' ')[0]}
                     </Text>
-                    <Text variant="small" color={Colors.textSecondary} style={{ fontSize: 24 }}>
+                    <Text variant="small" color={colors.textSecondary} style={{ fontSize: 24 }}>
                         Avg Pace
                     </Text>
                 </View>
 
-                <View style={styles.statBox}>
-                    <View style={[styles.statIcon, { backgroundColor: Colors.primary + '20' }]}>
-                        <Ionicons name="footsteps" size={40} color={Colors.primary} />
+                <View style={[styles.statBox, { backgroundColor: colors.background }]}>
+                    <View style={[styles.statIcon, { backgroundColor: colors.primary + '20' }]}>
+                        <Ionicons name="footsteps" size={40} color={colors.primary} />
                     </View>
-                    <Text variant="large" weight="bold" color={Colors.textPrimary} style={{ fontSize: 36 }}>
+                    <Text variant="large" weight="bold" color={colors.textPrimary} style={{ fontSize: 36 }}>
                         {activity.steps.toLocaleString()}
                     </Text>
-                    <Text variant="small" color={Colors.textSecondary} style={{ fontSize: 24 }}>
+                    <Text variant="small" color={colors.textSecondary} style={{ fontSize: 24 }}>
                         Steps
                     </Text>
                 </View>
 
-                <View style={styles.statBox}>
-                    <View style={[styles.statIcon, { backgroundColor: Colors.error + '20' }]}>
-                        <Ionicons name="flame" size={40} color={Colors.error} />
+                <View style={[styles.statBox, { backgroundColor: colors.background }]}>
+                    <View style={[styles.statIcon, { backgroundColor: colors.error + '20' }]}>
+                        <Ionicons name="flame" size={40} color={colors.error} />
                     </View>
-                    <Text variant="large" weight="bold" color={Colors.textPrimary} style={{ fontSize: 36 }}>
+                    <Text variant="large" weight="bold" color={colors.textPrimary} style={{ fontSize: 36 }}>
                         {Math.round(activity.calories)}
                     </Text>
-                    <Text variant="small" color={Colors.textSecondary} style={{ fontSize: 24 }}>
+                    <Text variant="small" color={colors.textSecondary} style={{ fontSize: 24 }}>
                         Calories
                     </Text>
                 </View>
@@ -138,11 +140,11 @@ export const ActivityShareCard: React.FC<ActivityShareCardProps> = ({
                 <View style={styles.mapSection}>
                     <View style={styles.mapHeader}>
                         <Ionicons name="map" size={36} color={getActivityColor()} />
-                        <Text variant="medium" weight="semiBold" color={Colors.textPrimary} style={{ fontSize: 32 }}>
+                        <Text variant="medium" weight="semiBold" color={colors.textPrimary} style={{ fontSize: 32 }}>
                             Your Route
                         </Text>
                     </View>
-                    <View style={styles.mapContainer}>
+                    <View style={[styles.mapContainer, { backgroundColor: colors.background }]}>
                         <StaticRouteMap
                             route={activity.route}
                             units={units}
@@ -153,15 +155,15 @@ export const ActivityShareCard: React.FC<ActivityShareCardProps> = ({
                     </View>
                     <View style={styles.mapInfo}>
                         <View style={styles.mapInfoItem}>
-                            <Ionicons name="location" size={24} color={Colors.textSecondary} />
-                            <Text variant="extraSmall" color={Colors.textSecondary} style={{ fontSize: 22 }}>
+                            <Ionicons name="location" size={24} color={colors.textSecondary} />
+                            <Text variant="extraSmall" color={colors.textSecondary} style={{ fontSize: 22 }}>
                                 {activity.route.length} GPS points
                             </Text>
                         </View>
                         {activity.elevationGain !== undefined && activity.elevationGain > 0 && (
                             <View style={styles.mapInfoItem}>
-                                <Ionicons name="trending-up" size={24} color={Colors.textSecondary} />
-                                <Text variant="extraSmall" color={Colors.textSecondary} style={{ fontSize: 22 }}>
+                                <Ionicons name="trending-up" size={24} color={colors.textSecondary} />
+                                <Text variant="extraSmall" color={colors.textSecondary} style={{ fontSize: 22 }}>
                                     +{activity.elevationGain.toFixed(0)}m elevation
                                 </Text>
                             </View>
@@ -172,37 +174,37 @@ export const ActivityShareCard: React.FC<ActivityShareCardProps> = ({
 
             {/* Performance Highlights */}
             <View style={styles.highlights}>
-                <View style={styles.highlightItem}>
-                    <Ionicons name="trending-up" size={36} color={Colors.success} />
+                <View style={[styles.highlightItem, { backgroundColor: colors.background }]}>
+                    <Ionicons name="trending-up" size={36} color={colors.success} />
                     <View style={styles.highlightText}>
-                        <Text variant="small" color={Colors.textSecondary} style={{ fontSize: 24 }}>
+                        <Text variant="small" color={colors.textSecondary} style={{ fontSize: 24 }}>
                             Speed
                         </Text>
-                        <Text variant="medium" weight="bold" color={Colors.textPrimary} style={{ fontSize: 32 }}>
+                        <Text variant="medium" weight="bold" color={colors.textPrimary} style={{ fontSize: 32 }}>
                             {((activity.distance / 1000) / (activity.duration / 3600)).toFixed(1)} {units === 'metric' ? 'km/h' : 'mph'}
                         </Text>
                     </View>
                 </View>
 
-                <View style={styles.highlightItem}>
-                    <Ionicons name="pulse" size={36} color={Colors.info} />
+                <View style={[styles.highlightItem, { backgroundColor: colors.background }]}>
+                    <Ionicons name="pulse" size={36} color={colors.info} />
                     <View style={styles.highlightText}>
-                        <Text variant="small" color={Colors.textSecondary} style={{ fontSize: 24 }}>
+                        <Text variant="small" color={colors.textSecondary} style={{ fontSize: 24 }}>
                             Cadence
                         </Text>
-                        <Text variant="medium" weight="bold" color={Colors.textPrimary} style={{ fontSize: 32 }}>
+                        <Text variant="medium" weight="bold" color={colors.textPrimary} style={{ fontSize: 32 }}>
                             {Math.round((activity.steps / activity.duration) * 60)} spm
                         </Text>
                     </View>
                 </View>
 
-                <View style={styles.highlightItem}>
-                    <Ionicons name="resize" size={36} color={Colors.warning} />
+                <View style={[styles.highlightItem, { backgroundColor: colors.background }]}>
+                    <Ionicons name="resize" size={36} color={colors.warning} />
                     <View style={styles.highlightText}>
-                        <Text variant="small" color={Colors.textSecondary} style={{ fontSize: 24 }}>
+                        <Text variant="small" color={colors.textSecondary} style={{ fontSize: 24 }}>
                             Stride
                         </Text>
-                        <Text variant="medium" weight="bold" color={Colors.textPrimary} style={{ fontSize: 32 }}>
+                        <Text variant="medium" weight="bold" color={colors.textPrimary} style={{ fontSize: 32 }}>
                             {((activity.distance / activity.steps) * 100).toFixed(0)} cm
                         </Text>
                     </View>
@@ -210,14 +212,14 @@ export const ActivityShareCard: React.FC<ActivityShareCardProps> = ({
             </View>
 
             {/* Footer Branding */}
-            <View style={styles.footer}>
+            <View style={[styles.footer, { borderTopColor: colors.border }]}>
                 <View style={styles.brandingContainer}>
                     <Ionicons name="fitness" size={36} color={getActivityColor()} />
-                    <Text variant="medium" weight="semiBold" color={Colors.textPrimary} style={{ fontSize: 32 }}>
+                    <Text variant="medium" weight="semiBold" color={colors.textPrimary} style={{ fontSize: 32 }}>
                         Stride
                     </Text>
                 </View>
-                <Text variant="small" color={Colors.textSecondary} style={{ fontSize: 24 }}>
+                <Text variant="small" color={colors.textSecondary} style={{ fontSize: 24 }}>
                     Track your progress, achieve your goals
                 </Text>
             </View>
@@ -229,7 +231,6 @@ const styles = StyleSheet.create({
     container: {
         width: CARD_WIDTH,
         height: CARD_HEIGHT,
-        backgroundColor: '#FFFFFF',
     },
     header: {
         paddingHorizontal: 64,
@@ -252,7 +253,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         paddingHorizontal: 64,
         paddingVertical: 64,
-        backgroundColor: '#FFFFFF',
     },
     primaryStat: {
         flex: 1,
@@ -265,7 +265,6 @@ const styles = StyleSheet.create({
     },
     divider: {
         width: 3,
-        backgroundColor: '#E0E0E0',
         marginHorizontal: 32,
     },
     secondaryStats: {
@@ -276,7 +275,6 @@ const styles = StyleSheet.create({
     },
     statBox: {
         width: '45%',
-        backgroundColor: '#F8F9FA',
         borderRadius: 24,
         padding: 32,
         alignItems: 'center',
@@ -304,7 +302,6 @@ const styles = StyleSheet.create({
         height: 700,
         borderRadius: 24,
         overflow: 'hidden',
-        backgroundColor: '#F8F9FA',
     },
     mapInfo: {
         flexDirection: 'row',
@@ -325,7 +322,6 @@ const styles = StyleSheet.create({
     highlightItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F8F9FA',
         borderRadius: 20,
         padding: 28,
         gap: 20,
@@ -338,7 +334,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 64,
         paddingVertical: 48,
         borderTopWidth: 3,
-        borderTopColor: '#F0F0F0',
         alignItems: 'center',
         gap: 12,
     },

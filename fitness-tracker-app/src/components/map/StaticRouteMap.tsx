@@ -12,7 +12,9 @@ import MapView, { Polyline, Marker, PROVIDER_GOOGLE, MapType as RNMapType } from
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../common/Text';
 import { RoutePoint, UnitSystem } from '../../types';
-import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { DarkMapStyle } from '../../constants/mapStyle';
+import { useTheme } from '../../hooks';
 import { formatDistance } from '../../utils/formatting';
 import { calculateDistance } from '../../utils/calculations';
 import { useSettings } from '../../context';
@@ -32,6 +34,7 @@ const StaticRouteMapComponent: React.FC<StaticRouteMapProps> = ({
   showPaceHeatmap = false,
   averagePace = 0,
 }) => {
+  const { colors, isDark } = useTheme();
   const { settings } = useSettings();
   const mapRef = React.useRef<MapView>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -179,7 +182,7 @@ const StaticRouteMapComponent: React.FC<StaticRouteMapProps> = ({
     if (!showPaceHeatmap || route.length < 2 || !averagePace) {
       return [{
         coordinates: route.map(p => ({ latitude: p.latitude, longitude: p.longitude })),
-        color: Colors.primary,
+        color: colors.primary,
       }];
     }
 
@@ -200,11 +203,11 @@ const StaticRouteMapComponent: React.FC<StaticRouteMapProps> = ({
       const segmentPace = distance > 0 ? (timeDiff / distance) * 1000 : averagePace;
 
       if (segmentPace < averagePace * 0.9) {
-        segmentColors.push(Colors.success);
+        segmentColors.push(colors.success);
       } else if (segmentPace > averagePace * 1.1) {
-        segmentColors.push(Colors.warning);
+        segmentColors.push(colors.warning);
       } else {
-        segmentColors.push(Colors.primary);
+        segmentColors.push(colors.primary);
       }
     }
 
@@ -235,7 +238,7 @@ const StaticRouteMapComponent: React.FC<StaticRouteMapProps> = ({
     batched.push({ coordinates: currentCoords, color: currentColor });
 
     return batched;
-  }, [route, showPaceHeatmap, averagePace]);
+  }, [route, showPaceHeatmap, averagePace, colors]);
 
   const fitToRoute = () => {
     if (mapRef.current && route.length > 0) {
@@ -255,9 +258,9 @@ const StaticRouteMapComponent: React.FC<StaticRouteMapProps> = ({
   if (!shouldRenderMap) {
     return (
       <View style={styles.container}>
-        <View style={styles.mapPlaceholder}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text variant="small" color={Colors.textSecondary} style={{ marginTop: Spacing.sm }}>
+        <View style={[styles.mapPlaceholder, { backgroundColor: colors.background }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text variant="small" color={colors.textSecondary} style={{ marginTop: Spacing.sm }}>
             Loading map...
           </Text>
         </View>
@@ -268,8 +271,8 @@ const StaticRouteMapComponent: React.FC<StaticRouteMapProps> = ({
   return (
     <View style={styles.container}>
       {!mapReady && (
-        <View style={styles.mapLoadingOverlay}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+        <View style={[styles.mapLoadingOverlay, { backgroundColor: colors.background }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       )}
       <MapView
@@ -279,6 +282,7 @@ const StaticRouteMapComponent: React.FC<StaticRouteMapProps> = ({
         style={styles.map}
         initialRegion={mapRegion}
         mapType={getMapType()}
+        customMapStyle={isDark ? DarkMapStyle : undefined}
         showsUserLocation={false}
         showsMyLocationButton={false}
         showsCompass={true}
@@ -291,8 +295,8 @@ const StaticRouteMapComponent: React.FC<StaticRouteMapProps> = ({
         zoomEnabled={true}
         pitchEnabled={true}
         loadingEnabled={true}
-        loadingIndicatorColor={Colors.primary}
-        loadingBackgroundColor="#F5F5F5"
+        loadingIndicatorColor={colors.primary}
+        loadingBackgroundColor={colors.background}
         onMapReady={() => setMapReady(true)}
         liteMode={false}
       >
@@ -318,7 +322,7 @@ const StaticRouteMapComponent: React.FC<StaticRouteMapProps> = ({
             anchor={{ x: 0.5, y: 0.5 }}
             tracksViewChanges={false}
           >
-            <View style={styles.startMarker}>
+            <View style={[styles.startMarker, { backgroundColor: colors.success }]}>
               <Ionicons name="flag" size={16} color="#fff" />
             </View>
           </Marker>
@@ -334,7 +338,7 @@ const StaticRouteMapComponent: React.FC<StaticRouteMapProps> = ({
             anchor={{ x: 0.5, y: 0.5 }}
             tracksViewChanges={false}
           >
-            <View style={styles.endMarker}>
+            <View style={[styles.endMarker, { backgroundColor: colors.error }]}>
               <Ionicons name="checkmark" size={16} color="#fff" />
             </View>
           </Marker>
@@ -351,8 +355,8 @@ const StaticRouteMapComponent: React.FC<StaticRouteMapProps> = ({
             anchor={{ x: 0.5, y: 0.5 }}
             tracksViewChanges={false}
           >
-            <View style={styles.distanceMarker}>
-              <Text variant="extraSmall" weight="semiBold" color={Colors.surface}>
+            <View style={[styles.distanceMarker, { backgroundColor: colors.primary }]}>
+              <Text variant="extraSmall" weight="semiBold" color="#FFFFFF">
                 {formatDistance(marker.distance, units, 0)}
               </Text>
             </View>
@@ -371,7 +375,7 @@ const StaticRouteMapComponent: React.FC<StaticRouteMapProps> = ({
             tracksViewChanges={false}
             flat={true}
           >
-            <View style={[styles.directionMarker, { transform: [{ rotate: `${marker.rotation}deg` }] }]}>
+            <View style={[styles.directionMarker, { backgroundColor: colors.primary, transform: [{ rotate: `${marker.rotation}deg` }] }]}>
               <Ionicons name="chevron-up" size={14} color="#FFFFFF" style={{ marginTop: -1 }} />
             </View>
           </Marker>
@@ -381,26 +385,26 @@ const StaticRouteMapComponent: React.FC<StaticRouteMapProps> = ({
       {/* Map controls */}
       {mapReady && (
         <View style={styles.controls}>
-          <TouchableOpacity style={styles.controlButton} onPress={fitToRoute}>
-            <Ionicons name="expand" size={20} color={Colors.primary} />
+          <TouchableOpacity style={[styles.controlButton, { backgroundColor: colors.surface }]} onPress={fitToRoute}>
+            <Ionicons name="expand" size={20} color={colors.primary} />
           </TouchableOpacity>
         </View>
       )}
 
       {/* Pace heatmap legend */}
       {showPaceHeatmap && mapReady && (
-        <View style={styles.legend}>
+        <View style={[styles.legend, { backgroundColor: colors.surface + 'F2' }]}>
           <View style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: Colors.success }]} />
-            <Text variant="extraSmall" color={Colors.textSecondary}>Fast</Text>
+            <View style={[styles.legendColor, { backgroundColor: colors.success }]} />
+            <Text variant="extraSmall" color={colors.textSecondary}>Fast</Text>
           </View>
           <View style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: Colors.primary }]} />
-            <Text variant="extraSmall" color={Colors.textSecondary}>Average</Text>
+            <View style={[styles.legendColor, { backgroundColor: colors.primary }]} />
+            <Text variant="extraSmall" color={colors.textSecondary}>Average</Text>
           </View>
           <View style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: Colors.warning }]} />
-            <Text variant="extraSmall" color={Colors.textSecondary}>Slow</Text>
+            <View style={[styles.legendColor, { backgroundColor: colors.warning }]} />
+            <Text variant="extraSmall" color={colors.textSecondary}>Slow</Text>
           </View>
         </View>
       )}
@@ -423,14 +427,12 @@ const styles = StyleSheet.create({
   mapPlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#F0F0F0',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: BorderRadius.large,
   },
   mapLoadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#F0F0F0',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
@@ -440,7 +442,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.success,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
@@ -451,7 +452,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.error,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
@@ -459,7 +459,6 @@ const styles = StyleSheet.create({
     ...Shadows.medium,
   },
   distanceMarker: {
-    backgroundColor: Colors.primary,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: BorderRadius.small,
@@ -471,7 +470,6 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
@@ -488,7 +486,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: BorderRadius.medium,
-    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     ...Shadows.medium,
@@ -498,7 +495,6 @@ const styles = StyleSheet.create({
     bottom: Spacing.lg,
     left: Spacing.lg,
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.medium,

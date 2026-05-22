@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   Platform,
   PermissionsAndroid,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,8 +19,9 @@ import * as Location from 'expo-location';
 import { Pedometer } from 'expo-sensors';
 import { Text, Button, ConfirmModal } from '../../components/common';
 import { useConfirmModal } from '../../hooks/useConfirmModal';
-import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import BatteryOptimizationService from '../../services/battery/BatteryOptimizationService';
+import { useTheme } from '../../hooks';
 
 interface PermissionsScreenProps {
   onComplete: () => void;
@@ -32,6 +34,8 @@ interface PermissionStatus {
 }
 
 export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete }) => {
+  const { colors, isDark } = useTheme();
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
   const { modalState, showConfirm, hideModal } = useConfirmModal();
   const [permissions, setPermissions] = useState<PermissionStatus>({
     location: 'pending',
@@ -106,7 +110,7 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
           'Location Permission Required',
           'Location permission is required to track your activities. Please enable it in settings.',
           [{ text: 'OK', onPress: hideModal, style: 'default' }],
-          { icon: 'location', iconColor: Colors.error }
+          { icon: 'location', iconColor: colors.error }
         );
         setIsRequesting(false);
         return;
@@ -174,7 +178,7 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
         'Error',
         'Failed to request permissions. Please try again.',
         [{ text: 'OK', onPress: hideModal, style: 'default' }],
-        { icon: 'alert-circle', iconColor: Colors.error }
+        { icon: 'alert-circle', iconColor: colors.error }
       );
     } finally {
       setIsRequesting(false);
@@ -184,11 +188,11 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
   const getPermissionIcon = (status: 'pending' | 'granted' | 'denied') => {
     switch (status) {
       case 'granted':
-        return <Ionicons name="checkmark-circle" size={24} color={Colors.success} />;
+        return <Ionicons name="checkmark-circle" size={24} color={colors.success} />;
       case 'denied':
-        return <Ionicons name="close-circle" size={24} color={Colors.error} />;
+        return <Ionicons name="close-circle" size={24} color={colors.error} />;
       default:
-        return <Ionicons name="help-circle" size={24} color={Colors.textSecondary} />;
+        return <Ionicons name="help-circle" size={24} color={colors.textSecondary} />;
     }
   };
 
@@ -196,6 +200,7 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -204,12 +209,12 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.iconContainer}>
-            <Ionicons name="shield-checkmark" size={64} color={Colors.primary} />
+            <Ionicons name="shield-checkmark" size={64} color={colors.primary} />
           </View>
-          <Text variant="extraLarge" weight="bold" color={Colors.textPrimary} align="center">
+          <Text variant="extraLarge" weight="bold" color={colors.textPrimary} align="center">
             Welcome to Stride
           </Text>
-          <Text variant="regular" color={Colors.textSecondary} align="center" style={styles.subtitle}>
+          <Text variant="regular" color={colors.textSecondary} align="center" style={styles.subtitle}>
             To provide accurate activity tracking, we need a few permissions. Your data stays private and secure on your device.
           </Text>
         </View>
@@ -220,19 +225,19 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
           <View style={styles.permissionCard}>
             <View style={styles.permissionHeader}>
               <View style={styles.permissionIconContainer}>
-                <Ionicons name="location" size={32} color={Colors.primary} />
+                <Ionicons name="location" size={32} color={colors.primary} />
               </View>
               <View style={styles.permissionInfo}>
-                <Text variant="medium" weight="semiBold" color={Colors.textPrimary}>
+                <Text variant="medium" weight="semiBold" color={colors.textPrimary}>
                   Location Access
                 </Text>
-                <Text variant="small" color={Colors.textSecondary}>
+                <Text variant="small" color={colors.textSecondary}>
                   Required
                 </Text>
               </View>
               {getPermissionIcon(permissions.location)}
             </View>
-            <Text variant="small" color={Colors.textSecondary} style={styles.permissionDescription}>
+            <Text variant="small" color={colors.textSecondary} style={styles.permissionDescription}>
               Essential for tracking your route, distance, speed, and pace during workouts. Without this, the app cannot function.
             </Text>
           </View>
@@ -241,19 +246,19 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
           <View style={styles.permissionCard}>
             <View style={styles.permissionHeader}>
               <View style={styles.permissionIconContainer}>
-                <Ionicons name="navigate" size={32} color={Colors.info} />
+                <Ionicons name="navigate" size={32} color={colors.info} />
               </View>
               <View style={styles.permissionInfo}>
-                <Text variant="medium" weight="semiBold" color={Colors.textPrimary}>
+                <Text variant="medium" weight="semiBold" color={colors.textPrimary}>
                   Background Location
                 </Text>
-                <Text variant="small" color={Colors.textSecondary}>
+                <Text variant="small" color={colors.textSecondary}>
                   Recommended
                 </Text>
               </View>
               {getPermissionIcon(permissions.backgroundLocation)}
             </View>
-            <Text variant="small" color={Colors.textSecondary} style={styles.permissionDescription}>
+            <Text variant="small" color={colors.textSecondary} style={styles.permissionDescription}>
               Allows continuous tracking when your screen is off or you're using other apps. Highly recommended for accurate workout data.
             </Text>
           </View>
@@ -262,19 +267,19 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
           <View style={styles.permissionCard}>
             <View style={styles.permissionHeader}>
               <View style={styles.permissionIconContainer}>
-                <Ionicons name="footsteps" size={32} color={Colors.success} />
+                <Ionicons name="footsteps" size={32} color={colors.success} />
               </View>
               <View style={styles.permissionInfo}>
-                <Text variant="medium" weight="semiBold" color={Colors.textPrimary}>
+                <Text variant="medium" weight="semiBold" color={colors.textPrimary}>
                   Motion & Fitness
                 </Text>
-                <Text variant="small" color={Colors.textSecondary}>
+                <Text variant="small" color={colors.textSecondary}>
                   Optional
                 </Text>
               </View>
               {getPermissionIcon(permissions.motion)}
             </View>
-            <Text variant="small" color={Colors.textSecondary} style={styles.permissionDescription}>
+            <Text variant="small" color={colors.textSecondary} style={styles.permissionDescription}>
               Enables step counting and activity recognition for more detailed workout insights. Optional but enhances your experience.
             </Text>
           </View>
@@ -283,24 +288,24 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
         {/* Privacy & Battery Note */}
         <View style={styles.infoSection}>
           <View style={styles.infoCard}>
-            <Ionicons name="lock-closed" size={24} color={Colors.success} />
+            <Ionicons name="lock-closed" size={24} color={colors.success} />
             <View style={styles.infoContent}>
-              <Text variant="medium" weight="semiBold" color={Colors.textPrimary}>
+              <Text variant="medium" weight="semiBold" color={colors.textPrimary}>
                 Privacy First
               </Text>
-              <Text variant="small" color={Colors.textSecondary} style={styles.infoText}>
+              <Text variant="small" color={colors.textSecondary} style={styles.infoText}>
                 All your data is stored locally on your device. We never collect, share, or sell your location data.
               </Text>
             </View>
           </View>
 
           <View style={styles.infoCard}>
-            <Ionicons name="battery-charging" size={24} color={Colors.primary} />
+            <Ionicons name="battery-charging" size={24} color={colors.primary} />
             <View style={styles.infoContent}>
-              <Text variant="medium" weight="semiBold" color={Colors.textPrimary}>
+              <Text variant="medium" weight="semiBold" color={colors.textPrimary}>
                 Battery Optimized
               </Text>
-              <Text variant="small" color={Colors.textSecondary} style={styles.infoText}>
+              <Text variant="small" color={colors.textSecondary} style={styles.infoText}>
                 We use efficient GPS tracking and foreground services to minimize battery drain during workouts.
               </Text>
             </View>
@@ -331,7 +336,7 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
               onPress={onComplete}
               disabled={isRequesting}
             >
-              <Text variant="regular" color={Colors.textSecondary}>
+              <Text variant="regular" color={colors.textSecondary}>
                 Skip for now
               </Text>
             </TouchableOpacity>
@@ -354,10 +359,10 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onComplete
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   scrollView: {
     flex: 1,
@@ -373,7 +378,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: Colors.primary + '15',
+    backgroundColor: colors.primary + '15',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.lg,
@@ -387,7 +392,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   permissionCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: BorderRadius.large,
     padding: Spacing.lg,
     ...Shadows.small,
@@ -401,7 +406,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: BorderRadius.medium,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.md,
@@ -419,7 +424,7 @@ const styles = StyleSheet.create({
   infoCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: BorderRadius.large,
     padding: Spacing.lg,
     gap: Spacing.md,
@@ -434,9 +439,9 @@ const styles = StyleSheet.create({
   },
   actions: {
     padding: Spacing.xl,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: colors.border,
   },
   button: {
     marginBottom: Spacing.md,
