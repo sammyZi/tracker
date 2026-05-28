@@ -11,7 +11,7 @@ A React Native mobile application built with Expo for tracking walking and runni
 - 📊 Comprehensive statistics and analytics
 - 🎯 Goal setting and achievement tracking
 - 📱 Background tracking with notifications
-- 🔐 Email/password and Google OAuth authentication
+- 🔐 Email/password and Google OAuth authentication (1-year persistent sessions)
 - ☁️ Cloud sync with Supabase
 - 💾 Offline support with automatic sync
 - 🔊 Audio coaching with distance announcements

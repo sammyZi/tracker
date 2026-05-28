@@ -63,7 +63,7 @@ function toAuthSession(
     refreshToken: supabaseSession.refresh_token,
     expiresAt: supabaseSession.expires_at
       ? supabaseSession.expires_at * 1000  // Supabase uses seconds, we use ms
-      : Date.now() + 3600 * 1000,
+      : Date.now() + 365 * 24 * 3600 * 1000, // 1 year fallback
     user: toAuthUser(supabaseSession.user),
   };
 }
