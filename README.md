@@ -1,18 +1,18 @@
-# FitTracker
+# Stride
 
-A comprehensive fitness tracking solution consisting of a React Native mobile app and a Next.js landing page.
+Stride is a modern, intuitive fitness tracking solution designed to help you monitor your walking and running activities seamlessly. It consists of a React Native mobile app and a Next.js landing page.
 
 ## Projects
 
-### 📱 Fitness Tracker App (`/fitness-tracker-app`)
-A React Native mobile application built with Expo for tracking walking and running activities.
+### 📱 Stride Mobile App (`/fitness-tracker-app`)
+A feature-rich React Native mobile application built with Expo for tracking walking and running activities with real-time metrics and route mapping.
 
 ### 🌐 Landing Page (`/fitness-landing`)
-A Next.js marketing website for the FitTracker app.
+A Next.js marketing website showcasing the Stride app.
 
 ---
 
-## Fitness Tracker App
+## Stride Mobile App
 
 ### 📸 Screenshots
 
@@ -76,16 +76,17 @@ A Next.js marketing website for the FitTracker app.
   </tr>
 </table>
 
-### Features
+### Key Features
 
-- **Real-time Activity Tracking** - Track walking and running with live metrics
-- **GPS Route Mapping** - High-accuracy location tracking with route visualization
-- **Statistics & Analytics** - View progress with charts and detailed stats
-- **Goal Setting** - Set daily/weekly goals and track achievements
-- **Background Tracking** - Continue tracking even when app is minimized
-- **Local Storage** - All data stored on device for privacy
-- **Data Export** - Export your activity data for backups
-- **Personal Records** - Track your best performances
+- **Real-time Activity Tracking** - Track walking and running with live metrics (distance, pace, calories burned, and time)
+- **GPS Route Mapping** - High-accuracy location tracking with beautiful route visualization on interactive maps
+- **Statistics & Analytics** - View your progress with comprehensive charts, detailed stats, and historical data
+- **Goal Setting** - Set daily and weekly targets, monitor streaks, and track achievements
+- **Background Tracking** - Continue tracking your activities seamlessly even when the app is minimized or the screen is locked
+- **Local Storage** - All data is securely stored on your device for enhanced privacy
+- **Data Export** - Export your activity data for personal backups or external analysis
+- **Personal Records** - Automatically track and celebrate your best performances and milestones
+- **Extended Authentication** - Secure Google OAuth with long-lived 1-year sessions for a frictionless experience
 
 ### Tech Stack
 
@@ -96,6 +97,7 @@ A Next.js marketing website for the FitTracker app.
 | TypeScript | Type-safe JavaScript |
 | React Navigation | Screen navigation |
 | React Native Maps | Route visualization |
+| Supabase | Backend & Authentication |
 | AsyncStorage | Local data persistence |
 | Expo Location | GPS tracking |
 | Expo Sensors | Step counting |
